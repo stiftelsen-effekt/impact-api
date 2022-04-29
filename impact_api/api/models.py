@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 def validate_year(value):
     if value not in range(2000,3000):
         raise ValidationError(
-            _('year must be the year of a Givewell evalution'),
+            _('must be the year of a Givewell evalution'),
             params={'value': value},
         )
 
@@ -21,8 +21,11 @@ def validate_month(value):
 class MaxImpactDistribution(models.Model):
     def __str__(self):
         return f'{self.start_year}-{self.start_month}'
-    start_date = models.DateField() # mandatory
-    end_date = models.DateField(blank=True, null=True) # (not mandatory,
+    start_year = models.IntegerField(validators=[validate_year])
+    start_month = models.IntegerField(validators=[validate_month])
+
+    end_year = models.IntegerField(blank=True, null=True, validators=[validate_year]) # TODO must be after start_date
+    end_month = models.IntegerField(blank=True, null=True, validators=[validate_month]) # TODO (not mandatory,
     # though maybe we want some validation that only one Distribution
     # lacks this); if present, must be after_start date
 
@@ -35,12 +38,13 @@ class Evaluation(models.Model):
         MaxImpactDistribution, on_delete=models.CASCADE,
         blank=True, null=True)
     charity_name = models.CharField(max_length=200)
-    start_year = models.IntegerField(validators=[validate_year]) # dates are mandatory unless it
-    start_month = models.IntegerField(validators=[validate_month])
+    start_year = models.IntegerField(validators=[validate_year]) # TODO dates are mandatory unless it
     # belongs to a Distribution
-    end_year = models.IntegerField(blank=True, null=True, validators=[validate_year]) # must be after start_date
+    start_month = models.IntegerField(validators=[validate_month])
+
+    end_year = models.IntegerField(blank=True, null=True, validators=[validate_year]) # TODO must be after start_date
     end_month = models.IntegerField(blank=True, null=True, validators=[validate_month])
-    cents_per_output = models.IntegerField() # mandatory
+    cents_per_output = models.IntegerField()
     output_type = models.CharField(max_length=511)
     cents_donated = models.IntegerField(default=100) # only set
     # for Evaluations that belong to Distributions;
