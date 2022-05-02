@@ -41,6 +41,9 @@ class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
     # TODO add function to get output cost
+    def calculated_cents_per_output(self) -> str:
+        return self.sum_in_cents / self.number_outputs_purchased
+
     max_impact_fund_grant = models.ForeignKey(
         MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
