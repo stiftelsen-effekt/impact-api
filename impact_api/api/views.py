@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import Http404
-from .models import Evaluation, MaxImpactDistribution
+from .models import Evaluation, MaxImpactFundGrant
 from datetime import date
 
 def index(request):
@@ -18,12 +18,12 @@ def evaluation(request, charity_name, year, month):
     response = f"You're looking at this evaluation {evaluation}"
     return HttpResponse(response)
 
-def max_impact_distribution(request, year, month):
+def max_impact_fund_grant(request, year, month):
     try:
-        distribution = MaxImpactDistribution.objects.get(
+        distribution = MaxImpactFundGrant.objects.get(
             start_year=year,
             start_month=month)
-    except MaxImpactDistribution.DoesNotExist:
-        raise Http404("No distribution with those parameters")
+    except MaxImpactFundGrant.DoesNotExist:
+        raise Http404("No grant with those parameters")
     response = f"You're looking at this distribution {distribution}"
     return HttpResponse(response)

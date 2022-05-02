@@ -1,27 +1,32 @@
 from django.contrib import admin
 
-from .models import MaxImpactDistribution, Evaluation, Grant
+from .models import MaxImpactFundGrant, Evaluation, Allotment, Charity
 
-class GrantInline(admin.StackedInline):
-    model = Grant
-    choice = 5
+class AllotmentInline(admin.StackedInline):
+    model = Allotment
+    # TODO - Does adding the choice line do anything?
+
 
 class EvaluationAdmin(admin.ModelAdmin):
     list_display = (
-        'charity_name', 'start_year', 'start_month',
+        'start_year', 'start_month',
         'cents_per_output', 'short_output_description')
     search_fields = [
-        'charity_name', 'short_output_description',
+        'short_output_description',
         'long_output_description']
 
-class MaxImpactDistributionAdmin(admin.ModelAdmin):
-    inlines = [GrantInline]
+class MaxImpactFundGrantAdmin(admin.ModelAdmin):
+    # inlines = [AllotmentInline]
     search_fields = [
-        'charity_name', 'short_output_description',
+        'short_output_description',
         'long_output_description']
 
-admin.site.register(MaxImpactDistribution, MaxImpactDistributionAdmin)
+class CharityAdmin(admin.ModelAdmin):
+    search_fields = ['charity_name', 'abbreviation']
+
+admin.site.register(MaxImpactFundGrant, MaxImpactFundGrantAdmin)
 admin.site.register(Evaluation, EvaluationAdmin)
-admin.site.register(Grant)
+admin.site.register(Charity, CharityAdmin)
+admin.site.register(Allotment)
 
 # Register your models here.

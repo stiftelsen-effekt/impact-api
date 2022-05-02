@@ -20,39 +20,49 @@ def validate_month(value):
             params={'value': value},
         )
 
-class MaxImpactDistribution(models.Model):
+class Charity(models.Model):
+    '''Has many Evaluations and Allotments'''
+    def __str__(self):
+        return self.charity_name
+    charity_name = models.CharField(max_length=200)
+    abbreviation = models.CharField(max_length=10)
+    class Meta:
+        verbose_name_plural = 'Charities'
+
+class MaxImpactFundGrant(models.Model):
+    '''Has many Allotments'''
     def __str__(self):
         return f'{self.start_year}-{self.start_month}'
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
-    # has_many Grants
+    # TODO make unique by date
 
-class Grant(models.Model):
+class Allotment(models.Model):
     def __str__(self):
-        return f"${self.grant_in_cents / 100} to {self.charity_name}"
-    max_impact_distribution = models.ForeignKey(
-        MaxImpactDistribution, on_delete=models.CASCADE)
-    charity_name = models.CharField(max_length=200)
-    charity_abbreviation = models.CharField(
-        max_length=10, blank=True, null=True)
-    short_output_description = models.CharField(max_length=100)
-    long_output_description = models.CharField(max_length=1000)
-    grant_in_cents = models.IntegerField()
+        return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
+    # TODO add function to get output cost
+    max_impact_fund_grant = models.ForeignKey(
+        MaxImpactFundGrant, on_delete=models.CASCADE)
+    charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
+
+    sum_in_cents = models.IntegerField()
     number_outputs_purchased = models.IntegerField()
+    short_output_description = models.CharField(max_length=100)
+    long_output_description = models.CharField(max_length=5000)
 
 class Evaluation(models.Model):
     def __str__(self):
-        return f'{self.charity_name} starting {self.start_year}-{self.start_month}'
-    charity_abbreviation = models.CharField(max_length=10)
-    charity_name = models.CharField(max_length=200)
+        return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
+    charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
+
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
-    short_output_description = models.CharField(max_length=100)
-    long_output_description = models.CharField(max_length=1000)
     cents_per_output = models.IntegerField()
-    # TODO - make Evaluations unique by (charity name and date)
+    short_output_description = models.CharField(max_length=100)
+    long_output_description = models.CharField(max_length=5000)
+    # TODO - make Evaluations unique by (charity id and date)
 
-@receiver(pre_save, sender=Evaluation)
+@receiver(pre_save, sender=Charity)
 def capitalize_abbreviation(sender, instance, *args, **kwargs):
-    instance.charity_abbreviation = instance.charity_abbreviation.upper()
+    instance.abbreviation = instance.abbreviation.upper()
 
