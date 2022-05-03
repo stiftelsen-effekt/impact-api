@@ -8,6 +8,7 @@ class AllotmentInline(admin.StackedInline):
 
 
 class EvaluationAdmin(admin.ModelAdmin):
+    # TODO - Figure out how to add charity name
     list_display = (
         'start_year', 'start_month',
         'cents_per_output', 'short_output_description')
@@ -16,7 +17,7 @@ class EvaluationAdmin(admin.ModelAdmin):
         'long_output_description']
 
 class MaxImpactFundGrantAdmin(admin.ModelAdmin):
-    # inlines = [AllotmentInline]
+    inlines = [AllotmentInline]
     search_fields = [
         'short_output_description',
         'long_output_description']
@@ -27,6 +28,5 @@ class CharityAdmin(admin.ModelAdmin):
 admin.site.register(MaxImpactFundGrant, MaxImpactFundGrantAdmin)
 admin.site.register(Evaluation, EvaluationAdmin)
 admin.site.register(Charity, CharityAdmin)
-admin.site.register(Allotment)
 
 # Register your models here.

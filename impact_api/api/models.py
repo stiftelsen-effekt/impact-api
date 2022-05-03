@@ -32,24 +32,26 @@ class Charity(models.Model):
         verbose_name_plural = 'Charities'
 
 class MaxImpactFundGrant(models.Model):
-    '''Has many Allotments'''
+    '''Has many Allotments
+    Unique by year + month'''
     def __str__(self):
         return f'{self.start_year}-{self.start_month}'
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
-    # TODO make unique by date
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['start_year', 'start_month'], name='unique_date')]
 
 class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
-    # TODO add function to get output cost
-    def calculated_cents_per_output(self) -> str:
-        return self.sum_in_cents / self.number_outputs_purchased
+    def rounded_cents_per_output(self) -> str:
+        return round(self.sum_in_cents / self.number_outputs_purchased)
 
     max_impact_fund_grant = models.ForeignKey(
         MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
-
     sum_in_cents = models.IntegerField()
     number_outputs_purchased = models.IntegerField()
     short_output_description = models.CharField(max_length=100)
@@ -59,12 +61,14 @@ class Evaluation(models.Model):
     def __str__(self):
         return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
-
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
     cents_per_output = models.IntegerField()
     short_output_description = models.CharField(max_length=100)
     long_output_description = models.CharField(max_length=5000)
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
     # TODO - make Evaluations unique by (charity id and date)
 
 @receiver(pre_save, sender=Charity)
