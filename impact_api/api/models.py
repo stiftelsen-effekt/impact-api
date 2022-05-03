@@ -4,16 +4,18 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
+from datetime import date
 
 def validate_year(value):
-    if value not in range(2000,2100):
+    # TODO - find out best practice here. Move to a validators file?
+    current_year = date.today().year
+    if value not in range(2000,current_year + 1):
         raise ValidationError(
             _('must be the year of a Givewell evalution'),
             params={'value': value},
         )
 
 def validate_month(value):
-    # TODO - find out best practice here. Move to a validators file?
     if value not in range(1, 13):
         raise ValidationError(
             _('month must be a number from 1-12'),
