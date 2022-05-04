@@ -58,6 +58,7 @@ class Allotment(models.Model):
     long_output_description = models.CharField(max_length=5000)
 
 class Evaluation(models.Model):
+    '''Unique by year, mmonth, and charity name'''
     def __str__(self):
         return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
@@ -69,7 +70,6 @@ class Evaluation(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
-    # TODO - make Evaluations unique by (charity id and date)
 
 @receiver(pre_save, sender=Charity)
 def capitalize_abbreviation(sender, instance, *args, **kwargs):

@@ -41,6 +41,9 @@ def evaluations(request):
     The latter uses all supplied charity codes (and is case-insensitive for
     ascii characters)
     '''
+    # TODO change charity_code to charity_abbreviation
+    # TODO have dropdown of pre-entered short output descriptions
+    # TODO tie long description to short description
     queries = request.GET
     dates = get_dates(queries)
     charity_abbreviations = [
@@ -75,6 +78,7 @@ def max_impact_fund_grant(request):
     end_year=integer
     end_month=integer
     '''
+
     queries = request.GET
     dates = get_dates(queries)
 
@@ -102,7 +106,7 @@ def get_dates(queries) -> dict:
         queries.get('start_year') or 2000,
         queries.get('start_month') or 1,
         queries.get('end_year') or date.today().year,
-        queries.get('end_month') or date.today().month)
+        queries.get('end_month') or 12)
 
 
 
