@@ -1,4 +1,4 @@
 # Work in progress GiveWell Impact API
 
 
-(Project Drive folder)[https://drive.google.com/drive/folders/1oq7mnB1tIN5beIFmf3iFKg01w46jSfiw?usp=sharing]
+[Project Drive folder](https://drive.google.com/drive/folders/1oq7mnB1tIN5beIFmf3iFKg01w46jSfiw?usp=sharing)
