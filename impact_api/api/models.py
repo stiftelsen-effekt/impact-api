@@ -43,33 +43,46 @@ class MaxImpactFundGrant(models.Model):
             models.UniqueConstraint(
                 fields=['start_year', 'start_month'], name='unique_date')]
 
+class Intervention(models.Model):
+    '''Has many Evaluations and Allotments
+    Unique by short description'''
+    def __str__(self):
+        return self.short_output_description
+    short_output_description = models.CharField(max_length=100)
+    long_output_description = models.CharField(max_length=5000)
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['short_output_description'], name='unique_short_description')]
+
 class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
     def rounded_cents_per_output(self) -> str:
         return round(self.sum_in_cents / self.number_outputs_purchased)
-
     max_impact_fund_grant = models.ForeignKey(
         MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
+    intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
     sum_in_cents = models.IntegerField()
     number_outputs_purchased = models.IntegerField()
-    short_output_description = models.CharField(max_length=100)
-    long_output_description = models.CharField(max_length=5000)
 
 class Evaluation(models.Model):
     '''Unique by year, mmonth, and charity name'''
     def __str__(self):
         return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
+    intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
     cents_per_output = models.IntegerField()
-    short_output_description = models.CharField(max_length=100)
-    long_output_description = models.CharField(max_length=5000)
+    # def charity_name(self):
+    #     return self.charity.charity_name
+    # charity_name.short_description = 'Charity Name'
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
+
+
 
 @receiver(pre_save, sender=Charity)
 def capitalize_abbreviation(sender, instance, *args, **kwargs):
