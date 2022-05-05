@@ -8,13 +8,24 @@ class AllotmentInline(admin.StackedInline):
     # TODO - Does adding the choice line do anything?
 
 class EvaluationAdmin(admin.ModelAdmin):
+    readonly_fields = ['long_description', 'charity_abbreviation']
+    fields = (
+        'charity', 'charity_abbreviation', 'intervention','long_description',
+        'start_year', 'start_month',  'cents_per_output', )
     list_display = (
-        'charity', 'start_year', 'start_month', 'intervention', 'cents_per_output', )
+        'charity', 'start_year', 'start_month', 'intervention',
+        'cents_per_output', )
     search_fields = [
         'charity__charity_name', 'charity__abbreviation',
         'intervention__short_output_description',
         'intervention__long_output_description']
-    # add_form = CustomUserCreationForm
+    @admin.display(description='Charity abbreviation')
+    def charity_abbreviation(self, instance):
+        return instance.charity.abbreviation
+
+    @admin.display(description='Long description')
+    def long_description(self, instance):
+        return instance.intervention.long_output_description
 
     @admin.display(ordering='charity__charity_name', description='Charity')
     def charity(self, evaluation):
@@ -24,6 +35,9 @@ class EvaluationAdmin(admin.ModelAdmin):
                    description='Intervention')
     def intervention(self, evaluation):
         return evaluation.intervention.short_output_description
+
+    class Media:
+        js = ("js/custom_script.js",)
 
 class MaxImpactFundGrantAdmin(admin.ModelAdmin):
     inlines = [AllotmentInline]

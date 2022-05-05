@@ -30,25 +30,25 @@ class MaxImpactFundGrantSerializer(serializers.ModelSerializer):
 def evaluations(request):
     '''Returns a Json response describing evaluations meeting parameters
     supplied as query strings. If any of the parameters are unspecified, it
-    assumes the most general case (e.g. all charities given no charity_codes)
+    assumes the most general case (e.g. all charities given no charity_abbreviations)
 
     Query strings of the following form are parsed:
     start_year=integer
     start_month=integer
     end_year=integer
     end_month=integer
-    charity_code=AMF&charity_code=sci&charity_code=DtW
+    charity_abbreviation=AMF&charity_abbreviation=sci&charity_abbreviation=DtW
     The latter uses all supplied charity codes (and is case-insensitive for
     ascii characters)
     '''
-    # TODO change charity_code to charity_abbreviation
+    # TODO change charity_abbreviation to charity_abbreviation
     # TODO have dropdown of pre-entered short output descriptions
     # TODO tie long description to short description
     queries = request.GET
     dates = get_dates(queries)
     charity_abbreviations = [
         abbreviation.upper()
-        for abbreviation in queries.getlist('charity_code')] or (
+        for abbreviation in queries.getlist('charity_abbreviation')] or (
         Charity.objects.values_list('abbreviation', flat=True))
 
     try:
