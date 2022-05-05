@@ -3,18 +3,18 @@ from django.contrib import admin
 from .models import (MaxImpactFundGrant, Evaluation,
                      Allotment, Charity, Intervention)
 
-# class InterventionInline(admin.TabularInline):
-#     model = Intervention
-
 class AllotmentInline(admin.StackedInline):
     model = Allotment
     # TODO - Does adding the choice line do anything?
 
 class EvaluationAdmin(admin.ModelAdmin):
-    # TODO - Figure out how to add charity name
     list_display = (
         'charity', 'start_year', 'start_month', 'intervention', 'cents_per_output', )
-    search_fields = []
+    search_fields = [
+        'charity__charity_name', 'charity__abbreviation',
+        'intervention__short_output_description',
+        'intervention__long_output_description']
+    # add_form = CustomUserCreationForm
 
     @admin.display(ordering='charity__charity_name', description='Charity')
     def charity(self, evaluation):
@@ -27,10 +27,42 @@ class EvaluationAdmin(admin.ModelAdmin):
 
 class MaxImpactFundGrantAdmin(admin.ModelAdmin):
     inlines = [AllotmentInline]
-    search_fields = []
+    search_fields = [
+        'allotment__charity__charity_name',
+        'allotment__charity__abbreviation',
+        'allotment__intervention__short_output_description',
+        'allotment__intervention__long_output_description',]
 
 # class AllotmentAdmin(admin.ModelAdmin):
 #     inlines = [InterventionInline]
+
+# class CustomUserAdmin(UserAdmin):
+#     model = UserTrainer
+#     add_form = CustomUserCreationForm
+#     fieldsets = (
+#         *UserAdmin.fieldsets,
+#         (
+#             'TrainerInfo',
+#             {
+#                 'fields': (
+#                     'age', 'info', 'image', 'inst',
+#                 )
+#             }
+#         )
+#     )
+
+# admin.site.register(UserTrainer, CustomUserAdmin)
+# @admin.register(Post)
+# class PostAdmin(admin.ModelAdmin):
+#     list_display = ('article', 'slug','trainer')
+#     list_display_links = ('article',)
+#     fields = ('article', 'slug', 'keywords', 'text',)
+#     readonly_fields = ('trainer',)
+
+#     def save_model(self, request, obj, form, change):
+#         obj.trainer = request.user
+#         super().save_model(request, obj, form, change)
+
 
 class CharityAdmin(admin.ModelAdmin):
     search_fields = ['charity_name', 'abbreviation']
