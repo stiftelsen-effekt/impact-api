@@ -9,8 +9,9 @@ class AllotmentInline(admin.StackedInline):
 
 class EvaluationAdmin(admin.ModelAdmin):
     readonly_fields = ['long_description', 'charity_abbreviation']
+    # pseudo-fields = 'long_description', 'charity_abbreviation',
     fields = (
-        'charity', 'charity_abbreviation', 'intervention','long_description',
+        'charity', 'charity_abbreviation', 'intervention', 'long_description',
         'start_year', 'start_month',  'cents_per_output', )
     list_display = (
         'charity', 'start_year', 'start_month', 'intervention',
@@ -19,6 +20,9 @@ class EvaluationAdmin(admin.ModelAdmin):
         'charity__charity_name', 'charity__abbreviation',
         'intervention__short_output_description',
         'intervention__long_output_description']
+    list_filter = ['charity__abbreviation',
+        'intervention__short_output_description', 'start_month',
+        'start_year']
     @admin.display(description='Charity abbreviation')
     def charity_abbreviation(self, instance):
         return instance.charity.abbreviation
@@ -36,9 +40,6 @@ class EvaluationAdmin(admin.ModelAdmin):
     def intervention(self, evaluation):
         return evaluation.intervention.short_output_description
 
-    class Media:
-        js = ("js/custom_script.js",)
-
 class MaxImpactFundGrantAdmin(admin.ModelAdmin):
     inlines = [AllotmentInline]
     search_fields = [
@@ -46,37 +47,9 @@ class MaxImpactFundGrantAdmin(admin.ModelAdmin):
         'allotment__charity__abbreviation',
         'allotment__intervention__short_output_description',
         'allotment__intervention__long_output_description',]
-
-# class AllotmentAdmin(admin.ModelAdmin):
-#     inlines = [InterventionInline]
-
-# class CustomUserAdmin(UserAdmin):
-#     model = UserTrainer
-#     add_form = CustomUserCreationForm
-#     fieldsets = (
-#         *UserAdmin.fieldsets,
-#         (
-#             'TrainerInfo',
-#             {
-#                 'fields': (
-#                     'age', 'info', 'image', 'inst',
-#                 )
-#             }
-#         )
-#     )
-
-# admin.site.register(UserTrainer, CustomUserAdmin)
-# @admin.register(Post)
-# class PostAdmin(admin.ModelAdmin):
-#     list_display = ('article', 'slug','trainer')
-#     list_display_links = ('article',)
-#     fields = ('article', 'slug', 'keywords', 'text',)
-#     readonly_fields = ('trainer',)
-
-#     def save_model(self, request, obj, form, change):
-#         obj.trainer = request.user
-#         super().save_model(request, obj, form, change)
-
+    list_filter = ['start_month', 'start_year',
+        'allotment__charity__abbreviation',
+        'allotment__intervention__short_output_description']
 
 class CharityAdmin(admin.ModelAdmin):
     search_fields = ['charity_name', 'abbreviation']
@@ -87,3 +60,6 @@ admin.site.register(Charity, CharityAdmin)
 admin.site.register(Intervention)
 
 # Register your models here.
+
+
+
