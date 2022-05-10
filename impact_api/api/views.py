@@ -66,7 +66,7 @@ def evaluations(request):
         response = {'error': 'No evaluation found with those parameters'}
     return JsonResponse(response)
 
-def max_impact_fund_grant(request):
+def max_impact_fund_grants(request):
     '''Returns a Json response describing grants meeting parameters
     supplied as query strings. If any of the parameters are unspecified, it
     assumes the most general case (e.g. grants up to the present day
@@ -88,7 +88,7 @@ def max_impact_fund_grant(request):
             start_month__gte=dates.start_month,
             start_year__lte=dates.end_year,
             start_month__lte=dates.end_month)
-        response = { 'grants': [
+        response = { 'max_impact_fund_grants': [
             MaxImpactFundGrantSerializer(grant).data for grant in grants]}
 
     except MaxImpactFundGrant.DoesNotExist:

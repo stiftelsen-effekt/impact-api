@@ -67,7 +67,7 @@ class Allotment(models.Model):
     number_outputs_purchased = models.IntegerField()
 
 class Evaluation(models.Model):
-    '''Unique by year, mmonth, and charity name'''
+    '''Unique by year, month, and charity name'''
     def __str__(self):
         return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
@@ -75,14 +75,9 @@ class Evaluation(models.Model):
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
     cents_per_output = models.IntegerField()
-    # def charity_name(self):
-    #     return self.charity.charity_name
-    # charity_name.short_description = 'Charity Name'
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
-
-
 
 @receiver(pre_save, sender=Charity)
 def capitalize_abbreviation(sender, instance, *args, **kwargs):
