@@ -51,18 +51,17 @@ def evaluations(request):
         for abbreviation in queries.getlist('charity_abbreviation')] or (
             Charity.objects.values_list('abbreviation', flat=True))
 
-    try:
-        evaluations = Evaluation.objects.filter(
-            charity__abbreviation__in=charity_abbreviations,
-            start_year__gte=dates.start_year,
-            start_month__gte=dates.start_month,
-            start_year__lte=dates.end_year,
-            start_month__lte=dates.end_month)
+    evaluations = Evaluation.objects.filter(
+        charity__abbreviation__in=charity_abbreviations,
+        start_year__gte=dates.start_year,
+        start_month__gte=dates.start_month,
+        start_year__lte=dates.end_year,
+        start_month__lte=dates.end_month)
 
+    if evaluations:
         response = {'evaluations': [
             EvaluationSerializer(evaluation).data for evaluation in evaluations]}
-
-    except Evaluation.DoesNotExist:
+    else:
         response = {'error': 'No evaluation found with those parameters'}
     return JsonResponse(response)
 
@@ -82,16 +81,15 @@ def max_impact_fund_grants(request):
     queries = request.GET
     dates = get_dates(queries)
 
-    try:
-        grants = MaxImpactFundGrant.objects.filter(
-            start_year__gte=dates.start_year,
-            start_month__gte=dates.start_month,
-            start_year__lte=dates.end_year,
-            start_month__lte=dates.end_month)
-        response = { 'max_impact_fund_grants': [
+    grants = MaxImpactFundGrant.objects.filter(
+        start_year__gte=dates.start_year,
+        start_month__gte=dates.start_month,
+        start_year__lte=dates.end_year,
+        start_month__lte=dates.end_month)
+    if grants:
+        response = {'max_impact_fund_grants': [
             MaxImpactFundGrantSerializer(grant).data for grant in grants]}
-
-    except MaxImpactFundGrant.DoesNotExist:
+    else:
         response = {'error': 'No grant found with those parameters'}
 
     return JsonResponse(response)

@@ -65,11 +65,11 @@ class EvaluationViewTests(TestCase):
         if self._testMethodName != 'test_no_evaluations':
             self.eval_1 = create_evaluation()
 
-    def test_no_evaluations(self):
-        response = self.client.get(reverse('evaluations'))
-        self.assertIs(response.status_code, 200)
-        content = json.loads(response.content)
-        self.assertEqual(content['evaluations'], [])
+    def test_evaluation_not_found(self):
+        query = reverse('evaluations') + '?start_year=2016'
+        content = json.loads(self.client.get(query).content)
+        self.assertEqual(
+            content['error'], 'No evaluation found with those parameters')
 
     def test_one_evaluation(self):
         response = self.client.get(reverse('evaluations'))
@@ -151,11 +151,11 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
             self.allotment_1 = create_allotment(
                 max_impact_fund_grant=grant_1)
 
-    def test_no_grants(self):
-        response = self.client.get(reverse('max_impact_fund_grants'))
-        self.assertIs(response.status_code, 200)
-        content = json.loads(response.content)
-        self.assertEqual(content['max_impact_fund_grants'], [])
+    def test_grant_not_found(self):
+        query = reverse('max_impact_fund_grants') + '?start_year=2016'
+        content = json.loads(self.client.get(query).content)
+        self.assertEqual(
+            content['error'], 'No grant found with those parameters')
 
     def test_one_grant(self):
         response = self.client.get(reverse('max_impact_fund_grants'))
@@ -190,8 +190,10 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         self.assertEqual(len(content_1['max_impact_fund_grants']), 1)
         self.assertEqual(len(content_2['max_impact_fund_grants']), 1)
         self.assertEqual(len(content_3['max_impact_fund_grants']), 2)
-        self.assertEqual(content_1['max_impact_fund_grants'][0]['start_year'], 2016)
-        self.assertEqual(content_2['max_impact_fund_grants'][0]['start_year'], 2015)
+        self.assertEqual(
+            content_1['max_impact_fund_grants'][0]['start_year'], 2016)
+        self.assertEqual(
+            content_2['max_impact_fund_grants'][0]['start_year'], 2015)
 
     def test_filtering_within_year(self):
         grant_2 = create_grant(start_month=1)
@@ -201,8 +203,10 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         content_2 = json.loads(self.client.get(query_2).content)
         self.assertEqual(len(content_1['max_impact_fund_grants']), 1)
         self.assertEqual(len(content_2['max_impact_fund_grants']), 1)
-        self.assertEqual(content_1['max_impact_fund_grants'][0]['start_month'], 6)
-        self.assertEqual(content_2['max_impact_fund_grants'][0]['start_month'], 1)
+        self.assertEqual(
+            content_1['max_impact_fund_grants'][0]['start_month'], 6)
+        self.assertEqual(
+            content_2['max_impact_fund_grants'][0]['start_month'], 1)
 
 
 
