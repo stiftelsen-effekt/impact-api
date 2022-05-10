@@ -49,7 +49,7 @@ def evaluations(request):
     charity_abbreviations = [
         abbreviation.upper()
         for abbreviation in queries.getlist('charity_abbreviation')] or (
-        Charity.objects.values_list('abbreviation', flat=True))
+            Charity.objects.values_list('abbreviation', flat=True))
 
     try:
         evaluations = Evaluation.objects.filter(
