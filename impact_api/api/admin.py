@@ -9,7 +9,6 @@ class AllotmentInline(admin.StackedInline):
 
 class EvaluationAdmin(admin.ModelAdmin):
     readonly_fields = ['long_description', 'charity_abbreviation']
-    # pseudo-fields = 'long_description', 'charity_abbreviation',
     fields = (
         'charity', 'charity_abbreviation', 'intervention', 'long_description',
         'start_year', 'start_month',  'cents_per_output', )
@@ -24,12 +23,12 @@ class EvaluationAdmin(admin.ModelAdmin):
         'intervention__short_output_description', 'start_month',
         'start_year']
     @admin.display(description='Charity abbreviation')
-    def charity_abbreviation(self, instance):
-        return instance.charity.abbreviation
+    def charity_abbreviation(self, evaluation):
+        return evaluation.charity.abbreviation
 
     @admin.display(description='Long description')
-    def long_description(self, instance):
-        return instance.intervention.long_output_description
+    def long_description(self, evaluation):
+        return evaluation.intervention.long_output_description
 
     @admin.display(ordering='charity__charity_name', description='Charity')
     def charity(self, evaluation):

@@ -3,11 +3,9 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 from django.core.exceptions import ValidationError
-
-
-# from unittest.mock import MagicMock
-
-from .models import (
+from django.contrib.admin.sites import AdminSite
+from api.admin import EvaluationAdmin
+from api.models import (
     Allotment, Evaluation, MaxImpactFundGrant, Charity, Intervention)
 
 def create_charity(charity_name='Skynet', abbreviation='SN'):
@@ -47,34 +45,79 @@ def create_allotment(
         charity=charity, intervention=intervention,
         max_impact_fund_grant=max_impact_fund_grant)
 
-class EvaluationModelTests(TestCase):
+class CharityModelTests(TestCase):
+    def test_string_representation(self):
+        charity = Charity(charity_name="Evil Henchperson's Union")
+        self.assertEqual(str(charity), "Evil Henchperson's Union")
+
+class MaxImpactFundGrantModelTests(TestCase):
+    def test_string_representation(self):
+        grant = MaxImpactFundGrant(start_year=2015, start_month=6)
+        self.assertEqual(str(grant), '2015-6')
+
     def test_validates_current_year_in_range(self):
-        evaluation = Evaluation(start_year=1999)
+        grant = MaxImpactFundGrant(start_year=1999)
         try:
-            evaluation.clean_fields()
+            grant.clean_fields()
         except ValidationError as e:
             self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
 
-        evaluation.start_year=2000
+        grant.start_year=2000
         try:
-            evaluation.clean_fields()
+            grant.clean_fields()
         except ValidationError as e:
-            self.assertFalse('name' in e.message_dict)
+            self.assertFalse('start_year' in e.message_dict)
 
         this_year = date.today().year
-        evaluation.start_year = this_year
+        grant.start_year = this_year
         try:
-            evaluation.clean_fields()
+            grant.clean_fields()
         except ValidationError as e:
-            self.assertFalse('name' in e.message_dict)
+            self.assertFalse('start_year' in e.message_dict)
 
-        evaluation.start_year = this_year + 1
+        grant.start_year = this_year + 1
         try:
-            evaluation.clean_fields()
+            grant.clean_fields()
         except ValidationError as e:
             self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
 
+    def test_validates_current_month_is_a_month(self):
+        grant = MaxImpactFundGrant(start_month=0)
+        try:
+            grant.clean_fields()
+        except ValidationError as e:
+            self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
+
+        grant.start_month = 1
+        try:
+            grant.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_month' in e.message_dict)
+
+        grant.start_month = 12
+        try:
+            grant.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_month' in e.message_dict)
+
+        grant.start_month = 13
+        try:
+            grant.clean_fields()
+        except ValidationError as e:
+            self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
+
+class InterventionModelTests(TestCase):
+    def test_string_representation(self):
+        intervention = Intervention(short_output_description='Toby Ord clones')
+        self.assertEqual(str(intervention), 'Toby Ord clones')
+
 class AllotmentModelTests(TestCase):
+    def test_string_representation(self):
+        charity = Charity(charity_name='Givewell Retirement Fund')
+        allotment = Allotment(sum_in_cents=1234567890, charity=charity)
+
+        self.assertEqual(str(allotment), '$12345678.9 to Givewell Retirement Fund')
+
     def test_rounds_cents_per_output_upward_correctly(self):
         """
             rounded_cents_per_output() returns the correct integer when
@@ -90,6 +133,77 @@ class AllotmentModelTests(TestCase):
         """
         allotment = Allotment(sum_in_cents=5, number_outputs_purchased=4)
         self.assertIs(allotment.rounded_cents_per_output(), 1)
+
+class EvaluationModelTests(TestCase):
+    def test_string_representation(self):
+        charity = Charity(charity_name = 'Bob')
+        evaluation = Evaluation(start_year=2015, start_month=6, charity=charity)
+        self.assertEqual(str(evaluation), 'Bob as of 2015-6')
+
+    def test_validates_current_year_in_range(self):
+        evaluation = Evaluation(start_year=1999)
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
+
+        evaluation.start_year=2000
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_year' in e.message_dict)
+
+        this_year = date.today().year
+        evaluation.start_year = this_year
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_year' in e.message_dict)
+
+        evaluation.start_year = this_year + 1
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
+
+    def test_validates_current_month_is_a_month(self):
+        evaluation = Evaluation(start_month=0)
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
+
+        evaluation.start_month = 1
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_month' in e.message_dict)
+
+        evaluation.start_month = 12
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('start_month' in e.message_dict)
+
+        evaluation.start_month = 13
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
+
+class EvaluationAdminTests(TestCase):
+    def test_custom_display_methods(self):
+        charity = Charity(abbreviation='JAEG', charity_name='Against Vensusia Foundation')
+        intervention = Intervention(
+            short_output_description='Giant mechs',
+            long_output_description='Preemptive defensive planning against giant Venusian monsters')
+        evaluation = Evaluation(charity=charity, intervention=intervention)
+        evaluation_admin = EvaluationAdmin(model=Evaluation, admin_site=AdminSite())
+        self.assertEqual(evaluation_admin.charity_abbreviation(evaluation=evaluation), 'JAEG')
+        self.assertEqual(evaluation_admin.long_description(evaluation=evaluation),
+            'Preemptive defensive planning against giant Venusian monsters')
+        self.assertEqual(evaluation_admin.charity(evaluation=evaluation), 'Against Vensusia Foundation')
+        self.assertEqual(evaluation_admin.intervention(evaluation=evaluation), 'Giant mechs')
 
 class EvaluationViewTests(TestCase):
     def setUp(self):
@@ -123,8 +237,9 @@ class EvaluationViewTests(TestCase):
         charity = create_charity(
             charity_name='Impossible Meat', abbreviation='IM')
         intervention = create_intervention(
-            long_output_description='DNA cloning from burgers',
-            short_output_description='Bringing the original animal back')
+            short_output_description='Media training',
+            long_output_description='Teaching multiple people to communicate with the dead')
+
         create_evaluation(charity=charity, intervention=intervention)
         query_1 = reverse('evaluations') + '?charity_abbreviation=im'
         content_1 = json.loads(self.client.get(query_1).content)
@@ -173,7 +288,6 @@ class EvaluationViewTests(TestCase):
         self.assertEqual(len(content_2['evaluations']), 1)
         self.assertEqual(content_1['evaluations'][0]['start_month'], 12)
         self.assertEqual(content_2['evaluations'][0]['start_month'], 1)
-
 
 class MaxImpactFundGrantIndexViewTests(TestCase):
     def setUp(self):
@@ -238,7 +352,5 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
             content_1['max_impact_fund_grants'][0]['start_month'], 6)
         self.assertEqual(
             content_2['max_impact_fund_grants'][0]['start_month'], 1)
-
-
 
 # Create your tests here.
