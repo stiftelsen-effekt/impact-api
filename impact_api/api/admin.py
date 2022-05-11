@@ -11,44 +11,36 @@ class EvaluationAdmin(admin.ModelAdmin):
     readonly_fields = ['long_description', 'charity_abbreviation']
     fields = (
         'charity', 'charity_abbreviation', 'intervention', 'long_description',
-        'start_year', 'start_month',  'cents_per_output', )
-    list_display = (
-        'charity', 'start_year', 'start_month', 'intervention',
-        'cents_per_output', )
-    search_fields = [
-        'charity__charity_name', 'charity__abbreviation',
-        'intervention__short_output_description',
-        'intervention__long_output_description']
-    list_filter = ['charity__abbreviation',
-        'intervention__short_output_description', 'start_month',
-        'start_year']
+        'start_year', 'start_month',  'cents_per_output')
+    list_display = ('charity', 'start_year', 'start_month', 'intervention','cents_per_output')
+    search_fields = ['charity__charity_name', 'charity__abbreviation',
+                     'intervention__short_description', 'intervention__long_description']
+    list_filter = ['charity__abbreviation', 'intervention__short_description',
+                   'start_month', 'start_year']
+
     @admin.display(description='Charity abbreviation')
     def charity_abbreviation(self, evaluation):
         return evaluation.charity.abbreviation
 
     @admin.display(description='Long description')
     def long_description(self, evaluation):
-        return evaluation.intervention.long_output_description
+        return evaluation.intervention.long_description
 
     @admin.display(ordering='charity__charity_name', description='Charity')
     def charity(self, evaluation):
         return evaluation.charity.charity_name
 
-    @admin.display(ordering='intervention__short_output_description',
+    @admin.display(ordering='intervention__short_description',
                    description='Intervention')
     def intervention(self, evaluation):
-        return evaluation.intervention.short_output_description
+        return evaluation.intervention.short_description
 
 class MaxImpactFundGrantAdmin(admin.ModelAdmin):
     inlines = [AllotmentInline]
-    search_fields = [
-        'allotment__charity__charity_name',
-        'allotment__charity__abbreviation',
-        'allotment__intervention__short_output_description',
-        'allotment__intervention__long_output_description',]
-    list_filter = ['start_month', 'start_year',
-        'allotment__charity__abbreviation',
-        'allotment__intervention__short_output_description']
+    search_fields = ['allotment__charity__charity_name', 'allotment__charity__abbreviation',
+        'allotment__intervention__short_description', 'allotment__intervention__long_description']
+    list_filter = ['start_month', 'start_year', 'allotment__charity__abbreviation',
+        'allotment__intervention__short_description']
 
 class CharityAdmin(admin.ModelAdmin):
     search_fields = ['charity_name', 'abbreviation']

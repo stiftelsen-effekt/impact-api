@@ -7,7 +7,6 @@ from django.template.defaultfilters import slugify
 from datetime import date
 
 def validate_year(value):
-    # TODO - find out best practice here. Move to a validators file?
     current_year = date.today().year
     if value not in range(2000,current_year + 1):
         raise ValidationError(
@@ -31,6 +30,10 @@ class Charity(models.Model):
     class Meta:
         verbose_name_plural = 'Charities'
 
+@receiver(pre_save, sender=Charity)
+def capitalize_abbreviation(sender, charity, *args, **kwargs):
+    charity.abbreviation = charity.abbreviation.upper()
+
 class MaxImpactFundGrant(models.Model):
     '''Has many Allotments
     Unique by year + month'''
@@ -47,20 +50,19 @@ class Intervention(models.Model):
     '''Has many Evaluations and Allotments
     Unique by short description'''
     def __str__(self):
-        return self.short_output_description
-    short_output_description = models.CharField(max_length=100)
-    long_output_description = models.CharField(max_length=5000)
+        return self.short_description
+    short_description = models.CharField(max_length=100)
+    long_description = models.CharField(max_length=5000)
     class Meta:
         constraints = [models.UniqueConstraint(
-            fields=['short_output_description'], name='unique_short_description')]
+            fields=['short_description'], name='unique_short_description')]
 
 class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
     def rounded_cents_per_output(self) -> str:
         return round(self.sum_in_cents / self.number_outputs_purchased)
-    max_impact_fund_grant = models.ForeignKey(
-        MaxImpactFundGrant, on_delete=models.CASCADE)
+    max_impact_fund_grant = models.ForeignKey(MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
     sum_in_cents = models.IntegerField()
@@ -78,8 +80,4 @@ class Evaluation(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
-
-@receiver(pre_save, sender=Charity)
-def capitalize_abbreviation(sender, instance, *args, **kwargs):
-    instance.abbreviation = instance.abbreviation.upper()
 

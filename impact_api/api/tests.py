@@ -13,12 +13,12 @@ def create_charity(charity_name='Skynet', abbreviation='SN'):
         charity_name=charity_name, abbreviation=abbreviation)
 
 def create_intervention(
-        short_output_description='Distributing killer robots',
-        long_output_description=('Working to reduce the risk from '
+        short_description='Distributing killer robots',
+        long_description=('Working to reduce the risk from '
                                  'misaligned natural intelligence')):
     return Intervention.objects.create(
-        short_output_description=short_output_description,
-        long_output_description=long_output_description)
+        short_description=short_description,
+        long_description=long_description)
 
 def create_evaluation(start_year=2010, start_month=12, cents_per_output=100,
                       charity=None, intervention=None):
@@ -49,6 +49,12 @@ class CharityModelTests(TestCase):
     def test_string_representation(self):
         charity = Charity(charity_name="Evil Henchperson's Union")
         self.assertEqual(str(charity), "Evil Henchperson's Union")
+
+    def test_abbreviation_upcasing_pre_save(self):
+        charity = Charity(charity_name='Centre for Effective Despotism',
+                          abbreviation='ced')
+        charity.save()
+        self.assertEqual(charity.abbreviation, 'CED')
 
 class MaxImpactFundGrantModelTests(TestCase):
     def test_string_representation(self):
@@ -108,7 +114,7 @@ class MaxImpactFundGrantModelTests(TestCase):
 
 class InterventionModelTests(TestCase):
     def test_string_representation(self):
-        intervention = Intervention(short_output_description='Toby Ord clones')
+        intervention = Intervention(short_description='Toby Ord clones')
         self.assertEqual(str(intervention), 'Toby Ord clones')
 
 class AllotmentModelTests(TestCase):
@@ -195,14 +201,15 @@ class EvaluationAdminTests(TestCase):
     def test_custom_display_methods(self):
         charity = Charity(abbreviation='JAEG', charity_name='Against Vensusia Foundation')
         intervention = Intervention(
-            short_output_description='Giant mechs',
-            long_output_description='Preemptive defensive planning against giant Venusian monsters')
+            short_description='Giant mechs',
+            long_description='Preemptive defensive planning against giant Venusian monsters')
         evaluation = Evaluation(charity=charity, intervention=intervention)
         evaluation_admin = EvaluationAdmin(model=Evaluation, admin_site=AdminSite())
         self.assertEqual(evaluation_admin.charity_abbreviation(evaluation=evaluation), 'JAEG')
         self.assertEqual(evaluation_admin.long_description(evaluation=evaluation),
             'Preemptive defensive planning against giant Venusian monsters')
-        self.assertEqual(evaluation_admin.charity(evaluation=evaluation), 'Against Vensusia Foundation')
+        self.assertEqual(evaluation_admin.charity(evaluation=evaluation),
+                         'Against Vensusia Foundation')
         self.assertEqual(evaluation_admin.intervention(evaluation=evaluation), 'Giant mechs')
 
 class EvaluationViewTests(TestCase):
@@ -228,8 +235,8 @@ class EvaluationViewTests(TestCase):
                   'abbreviation': 'SN', 'charity_name': 'Skynet', 'id': 1},
               'intervention': {
                   'id': 1,
-                  'short_output_description': 'Distributing killer robots',
-                  'long_output_description': (
+                  'short_description': 'Distributing killer robots',
+                  'long_description': (
                       'Working to reduce the risk from misaligned '
                       'natural intelligence')}}])
 
@@ -237,8 +244,8 @@ class EvaluationViewTests(TestCase):
         charity = create_charity(
             charity_name='Impossible Meat', abbreviation='IM')
         intervention = create_intervention(
-            short_output_description='Media training',
-            long_output_description='Teaching multiple people to communicate with the dead')
+            short_description='Media training',
+            long_description='Teaching multiple people to communicate with the dead')
 
         create_evaluation(charity=charity, intervention=intervention)
         query_1 = reverse('evaluations') + '?charity_abbreviation=im'
@@ -320,8 +327,8 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                       'abbreviation': 'SN'},
                   'intervention': {
                       'id': 1,
-                      'short_output_description': 'Distributing killer robots',
-                      'long_output_description': ('Working to reduce the '
+                      'short_description': 'Distributing killer robots',
+                      'long_description': ('Working to reduce the '
                           'risk from misaligned natural intelligence')}}]}])
 
     def test_filtering_by_year(self):
