@@ -1,6 +1,10 @@
+from datetime import date
+import json
 from django.test import TestCase
 from django.urls import reverse
-import json
+from django.core.exceptions import ValidationError
+
+
 # from unittest.mock import MagicMock
 
 from .models import (
@@ -43,6 +47,33 @@ def create_allotment(
         charity=charity, intervention=intervention,
         max_impact_fund_grant=max_impact_fund_grant)
 
+class EvaluationModelTests(TestCase):
+    def test_validates_current_year_in_range(self):
+        evaluation = Evaluation(start_year=1999)
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
+
+        evaluation.start_year=2000
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('name' in e.message_dict)
+
+        this_year = date.today().year
+        evaluation.start_year = this_year
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertFalse('name' in e.message_dict)
+
+        evaluation.start_year = this_year + 1
+        try:
+            evaluation.clean_fields()
+        except ValidationError as e:
+            self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
+
 class AllotmentModelTests(TestCase):
     def test_rounds_cents_per_output_upward_correctly(self):
         """
@@ -62,7 +93,7 @@ class AllotmentModelTests(TestCase):
 
 class EvaluationViewTests(TestCase):
     def setUp(self):
-        if self._testMethodName != 'test_no_evaluations':
+        if self._testMethodName != 'test_evaluation_not_found':
             self.eval_1 = create_evaluation()
 
     def test_evaluation_not_found(self):
@@ -146,7 +177,7 @@ class EvaluationViewTests(TestCase):
 
 class MaxImpactFundGrantIndexViewTests(TestCase):
     def setUp(self):
-        if self._testMethodName != 'test_no_grants':
+        if self._testMethodName != 'test_grant_not_found':
             grant_1 = create_grant()
             self.allotment_1 = create_allotment(
                 max_impact_fund_grant=grant_1)
