@@ -25,6 +25,9 @@ class Charity(models.Model):
     '''Has many Evaluations and Allotments'''
     def __str__(self):
         return self.charity_name
+    @classmethod
+    def is_hidden_from_admin_sidebar(cls):
+        return True
     charity_name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10)
     class Meta:
@@ -39,6 +42,9 @@ class MaxImpactFundGrant(models.Model):
     Unique by year + month'''
     def __str__(self):
         return f'{self.start_year}-{self.start_month}'
+    @classmethod
+    def is_hidden_from_admin_sidebar(cls):
+        return False
     start_year = models.IntegerField(validators=[validate_year])
     start_month = models.IntegerField(validators=[validate_month])
     class Meta:
@@ -51,6 +57,9 @@ class Intervention(models.Model):
     Unique by short description'''
     def __str__(self):
         return self.short_description
+    @classmethod
+    def is_hidden_from_admin_sidebar(cls):
+        return True
     short_description = models.CharField(max_length=100)
     long_description = models.CharField(max_length=5000)
     class Meta:
@@ -72,6 +81,9 @@ class Evaluation(models.Model):
     '''Unique by year, month, and charity name'''
     def __str__(self):
         return f'{self.charity.charity_name} as of {self.start_year}-{self.start_month}'
+    @classmethod
+    def is_hidden_from_admin_sidebar(cls):
+        return False
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
     start_year = models.IntegerField(validators=[validate_year])
