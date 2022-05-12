@@ -34,8 +34,8 @@ class Charity(models.Model):
         verbose_name_plural = 'Charities'
 
 @receiver(pre_save, sender=Charity)
-def capitalize_abbreviation(sender, charity, *args, **kwargs):
-    charity.abbreviation = charity.abbreviation.upper()
+def capitalize_abbreviation(sender, instance, *args, **kwargs):
+    instance.abbreviation = instance.abbreviation.upper()
 
 class MaxImpactFundGrant(models.Model):
     '''Has many Allotments

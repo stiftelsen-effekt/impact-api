@@ -8,9 +8,8 @@ class AllotmentInline(admin.StackedInline):
     # TODO - Does adding the choice line do anything?
 
 class EvaluationAdmin(admin.ModelAdmin):
-    readonly_fields = ['long_description', 'charity_abbreviation']
     fields = (
-        'charity', 'charity_abbreviation', 'intervention', 'long_description',
+        'charity', 'intervention',
         'start_year', 'start_month',  'cents_per_output')
     list_display = ('charity', 'start_year', 'start_month', 'intervention','cents_per_output')
     search_fields = ['charity__charity_name', 'charity__abbreviation',
