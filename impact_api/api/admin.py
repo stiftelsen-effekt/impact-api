@@ -1,11 +1,10 @@
 from django.contrib import admin
-
+from modeltranslation.admin import TranslationAdmin
 from .models import (MaxImpactFundGrant, Evaluation,
                      Allotment, Charity, Intervention)
 
 class AllotmentInline(admin.StackedInline):
     model = Allotment
-    # TODO - Does adding the choice line do anything?
 
 class EvaluationAdmin(admin.ModelAdmin):
     fields = (
@@ -44,10 +43,13 @@ class MaxImpactFundGrantAdmin(admin.ModelAdmin):
 class CharityAdmin(admin.ModelAdmin):
     search_fields = ['charity_name', 'abbreviation']
 
+class InterventionAdmin(TranslationAdmin):
+    pass
+
 admin.site.register(MaxImpactFundGrant, MaxImpactFundGrantAdmin)
 admin.site.register(Evaluation, EvaluationAdmin)
 admin.site.register(Charity, CharityAdmin)
-admin.site.register(Intervention)
+admin.site.register(Intervention, InterventionAdmin)
 
 # Register your models here.
 
