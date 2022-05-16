@@ -2,30 +2,11 @@ from collections import namedtuple
 from datetime import date
 from django.shortcuts import render
 from django.http import JsonResponse
-from rest_framework import serializers
-from .models import Evaluation, MaxImpactFundGrant, Charity, Allotment
-
-# TODO - find out best practice on where to store serializer classes
-class EvaluationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Evaluation
-        fields = '__all__'
-        depth = 1
-
-class AllotmentSerializer(serializers.ModelSerializer):
-    cents_per_output = serializers.ReadOnlyField(
-        source='rounded_cents_per_output')
-
-    class Meta:
-        model = Allotment
-        exclude = ['max_impact_fund_grant']
-        depth = 1
-
-class MaxImpactFundGrantSerializer(serializers.ModelSerializer):
-    allotment_set = AllotmentSerializer(many=True)
-    class Meta:
-        model = MaxImpactFundGrant
-        fields = '__all__'
+from django.utils.translation import activate
+from django.conf import settings
+from .models import Evaluation, MaxImpactFundGrant, Charity
+from .serializers import (
+    InterventionSerializer, EvaluationSerializer, AllotmentSerializer, MaxImpactFundGrantSerializer)
 
 def evaluations(request):
     '''Returns a Json response describing evaluations meeting parameters
@@ -33,19 +14,19 @@ def evaluations(request):
     assumes the most general case (e.g. all charities given no charity_abbreviations)
 
     Query strings of the following form are parsed:
-    start_year=integer
-    start_month=integer
-    end_year=integer
-    end_month=integer
+    start_year=<2000-present>
+    start_month=<1-12>
+    end_year=<2000-present>
+    end_month=<1-12>
     charity_abbreviation=AMF&charity_abbreviation=sci&charity_abbreviation=DtW
     The latter uses all supplied charity codes (and is case-insensitive for
     ascii characters)
+    language=<i18n country code>
     '''
-    # TODO change charity_abbreviation to charity_abbreviation
-    # TODO have dropdown of pre-entered short output descriptions
-    # TODO tie long description to short description
     queries = request.GET
-    dates = get_dates(queries)
+    _set_language(queries)
+    dates = _get_dates(queries)
+
     charity_abbreviations = [
         abbreviation.upper()
         for abbreviation in queries.getlist('charity_abbreviation')] or (
@@ -60,7 +41,7 @@ def evaluations(request):
 
     if evaluations:
         response = {'evaluations': [
-            EvaluationSerializer(evaluation).data for evaluation in evaluations]}
+            EvaluationSerializer(evaluation, context=queries).data for evaluation in evaluations]}
     else:
         response = {'error': 'No evaluation found with those parameters'}
     return JsonResponse(response)
@@ -72,14 +53,15 @@ def max_impact_fund_grants(request):
     given no end date)
 
     Query strings of the following form are parsed:
-    start_year=integer
-    start_month=integer
-    end_year=integer
-    end_month=integer
+    start_year=<2000-present>
+    start_month=<1-12>
+    end_year=<2000-present>
+    end_month=<1-12>
+    language=<i18n country code>
     '''
-
     queries = request.GET
-    dates = get_dates(queries)
+    _set_language(queries)
+    dates = _get_dates(queries)
 
     grants = MaxImpactFundGrant.objects.filter(
         start_year__gte=dates.start_year,
@@ -91,10 +73,9 @@ def max_impact_fund_grants(request):
             MaxImpactFundGrantSerializer(grant).data for grant in grants]}
     else:
         response = {'error': 'No grant found with those parameters'}
-
     return JsonResponse(response)
 
-def get_dates(queries) -> dict:
+def _get_dates(queries) -> dict:
     '''Fill in missing dates from the request query, defaulting to
     beginning of evaluations when start_dates are missing and present day
     when end dates are missing'''
@@ -106,5 +87,10 @@ def get_dates(queries) -> dict:
         queries.get('end_year') or date.today().year,
         queries.get('end_month') or 12)
 
+def _set_language(queries):
+    '''Set language as specified, or leave it as en if not specified'''
+    language = queries.get('language')
+    if language and language.lower() in [language[0] for language in settings.LANGUAGES]:
+        activate(language.lower())
 
 

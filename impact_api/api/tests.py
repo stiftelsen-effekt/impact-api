@@ -228,9 +228,12 @@ class EvaluationViewTests(TestCase):
         content = json.loads(response.content)
         self.assertEqual(content['evaluations'],
             [{'id': 1,
-              'cents_per_output': 100,
               'start_month': 12,
               'start_year': 2010,
+              'cents_per_output': 100,
+              'converted_cost_per_output': 1.0,
+              'currency': 'USD',
+              'language': 'en',
               'charity': {
                   'abbreviation': 'SN', 'charity_name': 'Skynet', 'id': 1},
               'intervention': {
@@ -318,18 +321,20 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
               'start_month': 6,
               'allotment_set': [{
                   'id': 1,
+                  'converted_sum': 99.99,
+                  'currency': 'USD',
+                  'language': 'en',
                   'cents_per_output': 4,
                   'sum_in_cents': 9999,
                   'number_outputs_purchased': 2222,
+                  'intervention': {
+                      'id': 1,
+                      'long_description': 'Working to reduce the risk from misaligned natural intelligence',
+                      'short_description': 'Distributing killer robots'},
                   'charity': {
                       'id': 1,
                       'charity_name': 'Skynet',
-                      'abbreviation': 'SN'},
-                  'intervention': {
-                      'id': 1,
-                      'short_description': 'Distributing killer robots',
-                      'long_description': ('Working to reduce the '
-                          'risk from misaligned natural intelligence')}}]}])
+                      'abbreviation': 'SN'}}]}])
 
     def test_filtering_by_year(self):
         grant_2 = create_grant(start_year=2016)

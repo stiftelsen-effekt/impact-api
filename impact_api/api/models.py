@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
+from currency_converter import CurrencyConverter
 from datetime import date
 
 def validate_year(value):
