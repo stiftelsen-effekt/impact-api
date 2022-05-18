@@ -1,10 +1,12 @@
 from datetime import date
 import json
+from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.admin.sites import AdminSite
 from api.admin import EvaluationAdmin
+from api import serializers
 from api.models import (
     Allotment, Evaluation, MaxImpactFundGrant, Charity, Intervention)
 
@@ -14,11 +16,14 @@ def create_charity(charity_name='Skynet', abbreviation='SN'):
 
 def create_intervention(
         short_description='Distributing killer robots',
-        long_description=('Working to reduce the risk from '
-                                 'misaligned natural intelligence')):
+        long_description='Reducing the risk from misaligned natural intelligence',
+        short_description_no='Døstrøbøtøng køllør røbøts',
+        long_description_no='Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce'):
     return Intervention.objects.create(
         short_description=short_description,
-        long_description=long_description)
+        long_description=long_description,
+        short_description_no=short_description_no,
+        long_description_no=long_description_no)
 
 def create_evaluation(start_year=2010, start_month=12, cents_per_output=100,
                       charity=None, intervention=None):
@@ -240,7 +245,7 @@ class EvaluationViewTests(TestCase):
                   'id': 1,
                   'short_description': 'Distributing killer robots',
                   'long_description': (
-                      'Working to reduce the risk from misaligned '
+                      'Reducing the risk from misaligned '
                       'natural intelligence')}}])
 
     def test_filtering_by_charity(self):
@@ -299,6 +304,22 @@ class EvaluationViewTests(TestCase):
         self.assertEqual(content_1['evaluations'][0]['start_month'], 12)
         self.assertEqual(content_2['evaluations'][0]['start_month'], 1)
 
+    def test_currency_defaults(self):
+        query_1 = reverse('evaluations')
+        content_1 = json.loads(self.client.get(query_1).content)
+        query_2 = reverse('evaluations') + '?language=no'
+        content_2 = json.loads(self.client.get(query_2).content)
+        self.assertEqual(content_1['evaluations'][0]['currency'], 'USD')
+        self.assertEqual(content_2['evaluations'][0]['currency'], 'EUR')
+
+    def test_specified_language(self):
+        query = reverse('evaluations') + '?language=no'
+        content = json.loads(self.client.get(query).content)
+        self.assertEqual(content['evaluations'][0]['intervention']['short_description'],
+                         'Døstrøbøtøng køllør røbøts')
+        self.assertEqual(content['evaluations'][0]['intervention']['long_description'],
+                         'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
+
 class MaxImpactFundGrantIndexViewTests(TestCase):
     def setUp(self):
         if self._testMethodName != 'test_grant_not_found':
@@ -329,7 +350,7 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                   'number_outputs_purchased': 2222,
                   'intervention': {
                       'id': 1,
-                      'long_description': 'Working to reduce the risk from misaligned natural intelligence',
+                      'long_description': 'Reducing the risk from misaligned natural intelligence',
                       'short_description': 'Distributing killer robots'},
                   'charity': {
                       'id': 1,
@@ -365,4 +386,34 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         self.assertEqual(
             content_2['max_impact_fund_grants'][0]['start_month'], 1)
 
-# Create your tests here.
+    def test_currency_defaults(self):
+        query_1 = reverse('max_impact_fund_grants')
+        content_1 = json.loads(self.client.get(query_1).content)
+        query_2 = reverse('max_impact_fund_grants') + '?language=no'
+        content_2 = json.loads(self.client.get(query_2).content)
+        self.assertEqual(content_1['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'USD')
+        self.assertEqual(content_2['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'EUR')
+
+    def test_specified_currency(self):
+        with patch('api.serializers.CurrencyManager') as mock:
+            instance = mock.return_value
+            instance.get_converted_value.return_value = 'the result'
+            man = serializers.CurrencyManager()
+            breakpoint()
+            query = reverse('max_impact_fund_grants') + '?currency=EUR'
+            content = json.loads(self.client.get(query).content)
+            # thing = CurrencyManager()
+            # thing.get_converted_value = MagicMock(return_value=3)
+            allotment = content['max_impact_fund_grants'][0]['allotment_set'][0]
+            self.assertEqual(allotment['currency'], 'EUR')
+            self.assertEqual(allotment['converted_sum'], 94.61582134746403)
+
+    def test_specified_language(self):
+        query = reverse('max_impact_fund_grants') + '?language=no'
+        content = json.loads(self.client.get(query).content)
+        intervention = content['max_impact_fund_grants'][0]['allotment_set'][0]['intervention']
+        self.assertEqual(intervention['short_description'],
+                         'Døstrøbøtøng køllør røbøts')
+        self.assertEqual(intervention['long_description'],
+                         'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
+

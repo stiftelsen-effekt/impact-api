@@ -22,6 +22,7 @@ def evaluations(request):
     The latter uses all supplied charity codes (and is case-insensitive for
     ascii characters)
     language=<i18n country code>
+    currency=<ISO 4217 code>
     '''
     queries = request.GET
     _set_language(queries)
@@ -58,6 +59,7 @@ def max_impact_fund_grants(request):
     end_year=<2000-present>
     end_month=<1-12>
     language=<i18n country code>
+    currency=<ISO 4217 code>
     '''
     queries = request.GET
     _set_language(queries)
@@ -70,7 +72,7 @@ def max_impact_fund_grants(request):
         start_month__lte=dates.end_month)
     if grants:
         response = {'max_impact_fund_grants': [
-            MaxImpactFundGrantSerializer(grant).data for grant in grants]}
+            MaxImpactFundGrantSerializer(grant, context=queries).data for grant in grants]}
     else:
         response = {'error': 'No grant found with those parameters'}
     return JsonResponse(response)
