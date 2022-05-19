@@ -1,10 +1,10 @@
 from datetime import date
 import json
-from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.admin.sites import AdminSite
+from currency_converter import CurrencyConverter
 from api.admin import EvaluationAdmin
 from api import serializers
 from api.models import (
@@ -56,6 +56,7 @@ class CharityModelTests(TestCase):
         self.assertEqual(str(charity), "Evil Henchperson's Union")
 
     def test_abbreviation_upcasing_pre_save(self):
+        '''Ensure Charity abbreviations are properly upcased on save'''
         charity = Charity(charity_name='Centre for Effective Despotism',
                           abbreviation='ced')
         charity.save()
@@ -67,6 +68,7 @@ class MaxImpactFundGrantModelTests(TestCase):
         self.assertEqual(str(grant), '2015-6')
 
     def test_validates_current_year_in_range(self):
+        '''Ensure current_year is between 2000 and now'''
         grant = MaxImpactFundGrant(start_year=1999)
         try:
             grant.clean_fields()
@@ -93,6 +95,7 @@ class MaxImpactFundGrantModelTests(TestCase):
             self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
 
     def test_validates_current_month_is_a_month(self):
+        '''Ensure current_month is between 1 and 12'''
         grant = MaxImpactFundGrant(start_month=0)
         try:
             grant.clean_fields()
@@ -129,21 +132,21 @@ class AllotmentModelTests(TestCase):
 
         self.assertEqual(str(allotment), '$12345678.9 to Givewell Retirement Fund')
 
-    def test_rounds_cents_per_output_upward_correctly(self):
+    def test_calculates_cents_per_output_upward_correctly(self):
         """
-            rounded_cents_per_output() returns the correct integer when
+            cents_per_output() returns the correct integer when
             rounding up
         """
         allotment = Allotment(sum_in_cents=5, number_outputs_purchased=3)
-        self.assertIs(allotment.rounded_cents_per_output(), 2)
+        self.assertEqual(allotment.cents_per_output(), 1.6666666666666667)
 
-    def test_rounds_cents_per_output_downward_correctly(self):
+    def test_calculates_cents_per_output_downward_correctly(self):
         """
-            rounded_cents_per_output() returns the correct integer when
+            cents_per_output() returns the correct integer when
             rounding down
         """
         allotment = Allotment(sum_in_cents=5, number_outputs_purchased=4)
-        self.assertIs(allotment.rounded_cents_per_output(), 1)
+        self.assertEqual(allotment.cents_per_output(), 1.25)
 
 class EvaluationModelTests(TestCase):
     def test_string_representation(self):
@@ -152,6 +155,7 @@ class EvaluationModelTests(TestCase):
         self.assertEqual(str(evaluation), 'Bob as of 2015-6')
 
     def test_validates_current_year_in_range(self):
+        '''Ensure current_year is between 2000 and now'''
         evaluation = Evaluation(start_year=1999)
         try:
             evaluation.clean_fields()
@@ -178,6 +182,7 @@ class EvaluationModelTests(TestCase):
             self.assertIn('must be the year of a Givewell evalution', e.message_dict['start_year'])
 
     def test_validates_current_month_is_a_month(self):
+        '''Ensure current_month is between 1 and 12'''
         evaluation = Evaluation(start_month=0)
         try:
             evaluation.clean_fields()
@@ -203,7 +208,7 @@ class EvaluationModelTests(TestCase):
             self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
 
 class EvaluationAdminTests(TestCase):
-    def test_custom_display_methods(self):
+    def test_custom_admin_display_methods(self):
         charity = Charity(abbreviation='JAEG', charity_name='Against Vensusia Foundation')
         intervention = Intervention(
             short_description='Giant mechs',
@@ -229,6 +234,7 @@ class EvaluationViewTests(TestCase):
             content['error'], 'No evaluation found with those parameters')
 
     def test_one_evaluation(self):
+        '''Check output from a single evaluation'''
         response = self.client.get(reverse('evaluations'))
         content = json.loads(response.content)
         self.assertEqual(content['evaluations'],
@@ -249,6 +255,7 @@ class EvaluationViewTests(TestCase):
                       'natural intelligence')}}])
 
     def test_filtering_by_charity(self):
+        '''Ensure that specifying charities in views returns only those charities'''
         charity = create_charity(
             charity_name='Impossible Meat', abbreviation='IM')
         intervention = create_intervention(
@@ -273,6 +280,8 @@ class EvaluationViewTests(TestCase):
             'Skynet')
 
     def test_filtering_by_year(self):
+        ''' Ensure specifying start_year/end_year in views gets only evaluations from/before
+        that year'''
         create_evaluation(
             charity=self.eval_1.charity,
             intervention=self.eval_1.intervention,
@@ -291,6 +300,8 @@ class EvaluationViewTests(TestCase):
             2010)
 
     def test_filtering_within_year(self):
+        ''' Ensure specifying start_month/end_month in views gets only evaluations from/before
+        that month'''
         create_evaluation(
             charity=self.eval_1.charity,
             intervention=self.eval_1.intervention,
@@ -305,6 +316,7 @@ class EvaluationViewTests(TestCase):
         self.assertEqual(content_2['evaluations'][0]['start_month'], 1)
 
     def test_currency_defaults(self):
+        '''Ensure query with language and no currency defaults correctly'''
         query_1 = reverse('evaluations')
         content_1 = json.loads(self.client.get(query_1).content)
         query_2 = reverse('evaluations') + '?language=no'
@@ -313,12 +325,24 @@ class EvaluationViewTests(TestCase):
         self.assertEqual(content_2['evaluations'][0]['currency'], 'EUR')
 
     def test_specified_language(self):
+        '''Ensure queries specifying language get the correct language'''
         query = reverse('evaluations') + '?language=no'
         content = json.loads(self.client.get(query).content)
         self.assertEqual(content['evaluations'][0]['intervention']['short_description'],
                          'Døstrøbøtøng køllør røbøts')
         self.assertEqual(content['evaluations'][0]['intervention']['long_description'],
                          'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
+
+    def test_specified_currency(self):
+        '''Ensure queries specifying currency get the correct currency'''
+        original_cost_in_cents = Evaluation.objects.all()[0].cents_per_output
+        expected_conversion = CurrencyConverter().convert(
+            original_cost_in_cents / 100, 'USD', 'EUR')
+        query = reverse('evaluations') + '?currency=EUR'
+        content = json.loads(self.client.get(query).content)
+        evaluation = content['evaluations'][0]
+        self.assertEqual(evaluation['currency'], 'EUR')
+        self.assertEqual(evaluation['converted_cost_per_output'], expected_conversion)
 
 class MaxImpactFundGrantIndexViewTests(TestCase):
     def setUp(self):
@@ -334,19 +358,20 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
             content['error'], 'No grant found with those parameters')
 
     def test_one_grant(self):
+        '''Check output from a single grant'''
         response = self.client.get(reverse('max_impact_fund_grants'))
         content = json.loads(response.content)
         self.assertEqual(content['max_impact_fund_grants'],
             [{'id': 1,
               'start_year': 2015,
               'start_month': 6,
+              'language': 'en',
               'allotment_set': [{
                   'id': 1,
                   'converted_sum': 99.99,
                   'currency': 'USD',
-                  'language': 'en',
-                  'cents_per_output': 4,
                   'sum_in_cents': 9999,
+                  'converted_cost_per_output': 0.045,
                   'number_outputs_purchased': 2222,
                   'intervention': {
                       'id': 1,
@@ -358,6 +383,8 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                       'abbreviation': 'SN'}}]}])
 
     def test_filtering_by_year(self):
+        '''Ensure specifying start_year/end_year in views gets only grants from/before
+        that year'''
         grant_2 = create_grant(start_year=2016)
         query_1 = reverse('max_impact_fund_grants') + '?start_year=2016'
         content_1 = json.loads(self.client.get(query_1).content)
@@ -374,6 +401,8 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
             content_2['max_impact_fund_grants'][0]['start_year'], 2015)
 
     def test_filtering_within_year(self):
+        '''Ensure specifying start_month/end_month in views gets only grants from/before
+        that month'''
         grant_2 = create_grant(start_month=1)
         query_1 = reverse('max_impact_fund_grants') + '?start_month=5'
         content_1 = json.loads(self.client.get(query_1).content)
@@ -387,6 +416,7 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
             content_2['max_impact_fund_grants'][0]['start_month'], 1)
 
     def test_currency_defaults(self):
+        '''Ensure query with language and no currency defaults correctly'''
         query_1 = reverse('max_impact_fund_grants')
         content_1 = json.loads(self.client.get(query_1).content)
         query_2 = reverse('max_impact_fund_grants') + '?language=no'
@@ -394,21 +424,8 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         self.assertEqual(content_1['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'USD')
         self.assertEqual(content_2['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'EUR')
 
-    def test_specified_currency(self):
-        with patch('api.serializers.CurrencyManager') as mock:
-            instance = mock.return_value
-            instance.get_converted_value.return_value = 'the result'
-            man = serializers.CurrencyManager()
-            breakpoint()
-            query = reverse('max_impact_fund_grants') + '?currency=EUR'
-            content = json.loads(self.client.get(query).content)
-            # thing = CurrencyManager()
-            # thing.get_converted_value = MagicMock(return_value=3)
-            allotment = content['max_impact_fund_grants'][0]['allotment_set'][0]
-            self.assertEqual(allotment['currency'], 'EUR')
-            self.assertEqual(allotment['converted_sum'], 94.61582134746403)
-
     def test_specified_language(self):
+        '''Ensure queries specifying language get the correct language'''
         query = reverse('max_impact_fund_grants') + '?language=no'
         content = json.loads(self.client.get(query).content)
         intervention = content['max_impact_fund_grants'][0]['allotment_set'][0]['intervention']
@@ -416,4 +433,15 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                          'Døstrøbøtøng køllør røbøts')
         self.assertEqual(intervention['long_description'],
                          'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
+
+    def test_specified_currency(self):
+        '''Ensure queries specifying currency get the correct currency'''
+        original_sum_in_cents = Allotment.objects.all()[0].sum_in_cents
+        expected_conversion = CurrencyConverter().convert(
+            original_sum_in_cents / 100, 'USD', 'EUR')
+        query = reverse('max_impact_fund_grants') + '?currency=EUR'
+        content = json.loads(self.client.get(query).content)
+        allotment = content['max_impact_fund_grants'][0]['allotment_set'][0]
+        self.assertEqual(allotment['currency'], 'EUR')
+        self.assertEqual(allotment['converted_sum'], expected_conversion)
 

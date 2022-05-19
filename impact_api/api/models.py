@@ -8,6 +8,7 @@ from currency_converter import CurrencyConverter
 from datetime import date
 
 def validate_year(value):
+    '''Validate year between 2000 and now'''
     current_year = date.today().year
     if value not in range(2000,current_year + 1):
         raise ValidationError(
@@ -16,6 +17,7 @@ def validate_year(value):
         )
 
 def validate_month(value):
+    '''Validate month is a number from 1-12'''
     if value not in range(1, 13):
         raise ValidationError(
             _('month must be a number from 1-12'),
@@ -70,8 +72,8 @@ class Intervention(models.Model):
 class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
-    def rounded_cents_per_output(self) -> str:
-        return round(self.sum_in_cents / self.number_outputs_purchased)
+    def cents_per_output(self) -> str:
+        return self.sum_in_cents / self.number_outputs_purchased
     max_impact_fund_grant = models.ForeignKey(MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)

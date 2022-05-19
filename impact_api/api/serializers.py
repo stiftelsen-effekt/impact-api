@@ -4,6 +4,11 @@ from currency_converter import CurrencyConverter
 from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention
 
 class CurrencyManager():
+    '''Deals with currency conversions
+
+    #get_converted_value converts US cents to other currency specified in a context object
+    #get_currency returns currency from a context object
+    '''
     DEFAULT_LANGUAGE_CURRENCY_MAPPING = {
         'no': 'EUR',
         'en': 'USD'
@@ -53,8 +58,12 @@ class AllotmentSerializer(serializers.ModelSerializer):
     intervention = InterventionSerializer(read_only=True)
     converted_sum = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
-    language = serializers.SerializerMethodField()
+    converted_cost_per_output = serializers.SerializerMethodField()
+
     manager = CurrencyManager()
+
+    def get_converted_cost_per_output(self, allotment) -> str:
+        return self.manager.get_converted_value(self.context, allotment.cents_per_output())
 
     def get_converted_sum(self, allotment):
         '''Return sum in specified currency, else in USD'''
@@ -64,13 +73,6 @@ class AllotmentSerializer(serializers.ModelSerializer):
         '''Return specified currency, else USD'''
         return self.manager.get_currency(self.context)
 
-    def get_language(self, evaluation):
-        '''Return globally set language'''
-        return get_language()
-
-    cents_per_output = serializers.ReadOnlyField(
-        source='rounded_cents_per_output')
-
     class Meta:
         model = Allotment
         exclude = ['max_impact_fund_grant']
@@ -78,6 +80,12 @@ class AllotmentSerializer(serializers.ModelSerializer):
 
 class MaxImpactFundGrantSerializer(serializers.ModelSerializer):
     allotment_set = AllotmentSerializer(many=True)
+    language = serializers.SerializerMethodField()
+
+    def get_language(self, allotment):
+        '''Return globally set language'''
+        return get_language()
+
     class Meta:
         model = MaxImpactFundGrant
         fields = '__all__'
