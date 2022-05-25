@@ -10,7 +10,7 @@ class CurrencyManager():
     #get_currency returns currency from a context object
     '''
     DEFAULT_LANGUAGE_CURRENCY_MAPPING = {
-        'no': 'EUR',
+        'no': 'NOK',
         'en': 'USD'
     }
 
