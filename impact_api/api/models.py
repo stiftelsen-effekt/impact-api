@@ -48,8 +48,8 @@ class MaxImpactFundGrant(models.Model):
     @classmethod
     def is_hidden_from_admin_sidebar(cls):
         return False
-    start_year = models.IntegerField(validators=[validate_year])
-    start_month = models.IntegerField(validators=[validate_month])
+    start_year = models.PositiveIntegerField(validators=[validate_year])
+    start_month = models.PositiveIntegerField(validators=[validate_month])
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -62,7 +62,7 @@ class Intervention(models.Model):
         return self.short_description
     @classmethod
     def is_hidden_from_admin_sidebar(cls):
-        return True
+        return False
     short_description = models.CharField(max_length=100)
     long_description = models.CharField(max_length=5000)
     class Meta:
@@ -77,8 +77,8 @@ class Allotment(models.Model):
     max_impact_fund_grant = models.ForeignKey(MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
-    sum_in_cents = models.IntegerField()
-    number_outputs_purchased = models.IntegerField()
+    sum_in_cents = models.PositiveIntegerField()
+    number_outputs_purchased = models.PositiveIntegerField()
 
 class Evaluation(models.Model):
     '''Unique by year, month, and charity name'''
@@ -89,9 +89,9 @@ class Evaluation(models.Model):
         return False
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
-    start_year = models.IntegerField(validators=[validate_year])
-    start_month = models.IntegerField(validators=[validate_month])
-    cents_per_output = models.IntegerField()
+    start_year = models.PositiveIntegerField(validators=[validate_year])
+    start_month = models.PositiveIntegerField(validators=[validate_month])
+    cents_per_output = models.PositiveIntegerField()
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
