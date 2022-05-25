@@ -6,6 +6,13 @@ from .models import (MaxImpactFundGrant, Evaluation,
 class AllotmentInline(admin.StackedInline):
     model = Allotment
 
+class AllotmentAdmin(admin.ModelAdmin):
+    readonly_fields = ('rounded_cents_per_output',)
+
+    @admin.display(description='Rounded cents per output (not auto-refreshed)')
+    def rounded_cents_per_output(self, allotment):
+        return round(allotment.cents_per_output())
+
 class EvaluationAdmin(admin.ModelAdmin):
     fields = (
         'charity', 'intervention',
@@ -15,14 +22,6 @@ class EvaluationAdmin(admin.ModelAdmin):
                      'intervention__short_description', 'intervention__long_description']
     list_filter = ['charity__abbreviation', 'intervention__short_description',
                    'start_month', 'start_year']
-
-    @admin.display(description='Charity abbreviation')
-    def charity_abbreviation(self, evaluation):
-        return evaluation.charity.abbreviation
-
-    @admin.display(description='Long description')
-    def long_description(self, evaluation):
-        return evaluation.intervention.long_description
 
     @admin.display(ordering='charity__charity_name', description='Charity')
     def charity(self, evaluation):
@@ -43,13 +42,11 @@ class MaxImpactFundGrantAdmin(admin.ModelAdmin):
 class CharityAdmin(admin.ModelAdmin):
     search_fields = ['charity_name', 'abbreviation']
 
-class InterventionAdmin(TranslationAdmin):
-    pass
-
 admin.site.register(MaxImpactFundGrant, MaxImpactFundGrantAdmin)
 admin.site.register(Evaluation, EvaluationAdmin)
 admin.site.register(Charity, CharityAdmin)
-admin.site.register(Intervention, InterventionAdmin)
+admin.site.register(Intervention)
+admin.site.register(Allotment, AllotmentAdmin)
 
 # Register your models here.
 
