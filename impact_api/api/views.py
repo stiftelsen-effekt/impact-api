@@ -2,8 +2,6 @@ from collections import namedtuple
 from datetime import date
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.utils.translation import activate
-from django.conf import settings
 from .models import Evaluation, MaxImpactFundGrant, Charity
 from .serializers import (
     InterventionSerializer, EvaluationSerializer, AllotmentSerializer, MaxImpactFundGrantSerializer)
@@ -25,7 +23,6 @@ def evaluations(request):
     currency=<ISO 4217 code>
     '''
     queries = request.GET
-    _set_language(queries)
     dates = _get_dates(queries)
 
     charity_abbreviations = [
@@ -40,11 +37,10 @@ def evaluations(request):
         start_year__lte=dates.end_year,
         start_month__lte=dates.end_month)
 
-    if evaluations:
-        response = {'evaluations': [
-            EvaluationSerializer(evaluation, context=queries).data for evaluation in evaluations]}
-    else:
-        response = {'error': 'No evaluation found with those parameters'}
+    response = {'evaluations': [
+        EvaluationSerializer(evaluation, context=queries).data for evaluation in evaluations]}
+    if not evaluations:
+        response['warnings'] = ['No evaluations found with those parameters']
     return JsonResponse(response)
 
 def max_impact_fund_grants(request):
@@ -62,7 +58,6 @@ def max_impact_fund_grants(request):
     currency=<ISO 4217 code>
     '''
     queries = request.GET
-    _set_language(queries)
     dates = _get_dates(queries)
 
     grants = MaxImpactFundGrant.objects.filter(
@@ -70,11 +65,10 @@ def max_impact_fund_grants(request):
         start_month__gte=dates.start_month,
         start_year__lte=dates.end_year,
         start_month__lte=dates.end_month)
-    if grants:
-        response = {'max_impact_fund_grants': [
-            MaxImpactFundGrantSerializer(grant, context=queries).data for grant in grants]}
-    else:
-        response = {'error': 'No grant found with those parameters'}
+    response = {'max_impact_fund_grants': [
+        MaxImpactFundGrantSerializer(grant, context=queries).data for grant in grants]}
+    if not grants:
+        response['warnings'] = ['No grants found with those parameters']
     return JsonResponse(response)
 
 def _get_dates(queries) -> dict:
@@ -88,11 +82,5 @@ def _get_dates(queries) -> dict:
         queries.get('start_month') or 1,
         queries.get('end_year') or date.today().year,
         queries.get('end_month') or 12)
-
-def _set_language(queries):
-    '''Set language as specified, or leave it as en if not specified'''
-    language = queries.get('language')
-    if language and language.lower() in [language[0] for language in settings.LANGUAGES]:
-        activate(language.lower())
 
 
