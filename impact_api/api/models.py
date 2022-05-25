@@ -72,6 +72,8 @@ class Intervention(models.Model):
 class Allotment(models.Model):
     def __str__(self):
         return f"${self.sum_in_cents / 100} to {self.charity.charity_name}"
+    def is_hidden_from_admin_sidebar(cls):
+        return True
     def cents_per_output(self) -> str:
         return self.sum_in_cents / self.number_outputs_purchased
     max_impact_fund_grant = models.ForeignKey(MaxImpactFundGrant, on_delete=models.CASCADE)

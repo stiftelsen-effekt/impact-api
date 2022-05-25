@@ -6,6 +6,8 @@ from .models import Evaluation, MaxImpactFundGrant, Charity
 from .serializers import (
     InterventionSerializer, EvaluationSerializer, AllotmentSerializer, MaxImpactFundGrantSerializer)
 
+# Before any of the views are called, the code in middleware.py will run
+
 def evaluations(request):
     '''Returns a Json response describing evaluations meeting parameters
     supplied as query strings. If any of the parameters are unspecified, it

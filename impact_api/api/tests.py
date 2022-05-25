@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.admin.sites import AdminSite
 from currency_converter import CurrencyConverter
-from api.admin import EvaluationAdmin
+from api.admin import EvaluationAdmin, AllotmentAdmin
 from api import serializers
 from api.models import (
     Allotment, Evaluation, MaxImpactFundGrant, Charity, Intervention)
@@ -207,20 +207,38 @@ class EvaluationModelTests(TestCase):
         except ValidationError as e:
             self.assertIn('month must be a number from 1-12', e.message_dict['start_month'])
 
+class AllotmentAdminTests(TestCase):
+    def test_rounding_cents_per_output(self):
+        allotment = create_allotment(sum_in_cents=15, number_outputs_purchased=4)
+        allotment_admin = AllotmentAdmin(model=Allotment, admin_site=AdminSite())
+        self.assertEqual(allotment_admin.rounded_cents_per_output(allotment=allotment),
+                         4)
+
 class EvaluationAdminTests(TestCase):
     def test_custom_admin_display_methods(self):
+        '''Check whether pseudo-fields on Evaluation are functioning'''
         charity = Charity(abbreviation='JAEG', charity_name='Against Vensusia Foundation')
         intervention = Intervention(
             short_description='Giant mechs',
             long_description='Preemptive defensive planning against giant Venusian monsters')
         evaluation = Evaluation(charity=charity, intervention=intervention)
         evaluation_admin = EvaluationAdmin(model=Evaluation, admin_site=AdminSite())
-        self.assertEqual(evaluation_admin.charity_abbreviation(evaluation=evaluation), 'JAEG')
-        self.assertEqual(evaluation_admin.long_description(evaluation=evaluation),
-            'Preemptive defensive planning against giant Venusian monsters')
         self.assertEqual(evaluation_admin.charity(evaluation=evaluation),
                          'Against Vensusia Foundation')
         self.assertEqual(evaluation_admin.intervention(evaluation=evaluation), 'Giant mechs')
+
+class MiddlewareIntegrationTests(TestCase):
+    def test_unsupported_currency_and_language_code_errors(self):
+        query_1 = reverse('evaluations') + '?language=ZZ'
+        content = json.loads(self.client.get(query_1).content)
+        self.assertEqual(len(content['errors']), 1)
+        self.assertEqual(content['errors'][0], 'Language code zz not supported')
+
+        query_2 = reverse('evaluations') + '?currency=zzz&language=ZZ'
+        content_2 = json.loads(self.client.get(query_2).content)
+        self.assertEqual(len(content_2['errors']), 2)
+        self.assertEqual(content_2['errors'][0], 'Currency ZZZ not supported')
+        self.assertEqual(content_2['errors'][1], 'Language code zz not supported')
 
 class EvaluationViewTests(TestCase):
     def setUp(self):
@@ -231,12 +249,13 @@ class EvaluationViewTests(TestCase):
         query = reverse('evaluations') + '?start_year=2016'
         content = json.loads(self.client.get(query).content)
         self.assertEqual(
-            content['error'], 'No evaluation found with those parameters')
+            content['warnings'][0], 'No evaluations found with those parameters')
 
     def test_one_evaluation(self):
         '''Check output from a single evaluation'''
         response = self.client.get(reverse('evaluations'))
         content = json.loads(response.content)
+        self.assertNotIn('warnings', content)
         self.assertEqual(content['evaluations'],
             [{'id': 1,
               'start_month': 12,
@@ -322,7 +341,7 @@ class EvaluationViewTests(TestCase):
         query_2 = reverse('evaluations') + '?language=no'
         content_2 = json.loads(self.client.get(query_2).content)
         self.assertEqual(content_1['evaluations'][0]['currency'], 'USD')
-        self.assertEqual(content_2['evaluations'][0]['currency'], 'EUR')
+        self.assertEqual(content_2['evaluations'][0]['currency'], 'NOK')
 
     def test_specified_language(self):
         '''Ensure queries specifying language get the correct language'''
@@ -355,12 +374,13 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         query = reverse('max_impact_fund_grants') + '?start_year=2016'
         content = json.loads(self.client.get(query).content)
         self.assertEqual(
-            content['error'], 'No grant found with those parameters')
+            content['warnings'][0], 'No grants found with those parameters')
 
     def test_one_grant(self):
         '''Check output from a single grant'''
         response = self.client.get(reverse('max_impact_fund_grants'))
         content = json.loads(response.content)
+        self.assertNotIn('warnings', content)
         self.assertEqual(content['max_impact_fund_grants'],
             [{'id': 1,
               'start_year': 2015,
@@ -422,7 +442,7 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         query_2 = reverse('max_impact_fund_grants') + '?language=no'
         content_2 = json.loads(self.client.get(query_2).content)
         self.assertEqual(content_1['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'USD')
-        self.assertEqual(content_2['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'EUR')
+        self.assertEqual(content_2['max_impact_fund_grants'][0]['allotment_set'][0]['currency'], 'NOK')
 
     def test_specified_language(self):
         '''Ensure queries specifying language get the correct language'''
