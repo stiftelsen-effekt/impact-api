@@ -86,7 +86,9 @@ DATABASES = {
         'NAME': os.getenv("DATABASE_NAME"),
         'USER': os.getenv("DATABASE_USER"),
         'PASSWORD': os.getenv("DATABASE_PASSWORD"),
-        'HOST': os.getenv("DATABASE_HOST"),
+        'OPTIONS': {
+            'unix_socket' : '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
+        }
     }
 }
 
