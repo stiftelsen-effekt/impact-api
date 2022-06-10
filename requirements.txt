@@ -7,3 +7,4 @@ sqlparse==0.4.2
 django-modeltranslation==0.18.2
 CurrencyConverter==0.16.12
 gunicorn==20.1.0
+whitenoise==6.2.0
