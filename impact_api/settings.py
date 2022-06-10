@@ -27,7 +27,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv('DJANGO_SECRET') != None el
 DEBUG = False if os.getenv('DJANGO_SECRET') != None else True
 
 ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv('DJANGO_SECRET') != None else ["localhost"]
-
+CSRF_TRUSTED_ORIGINS = ["impact.gieffektivt.no"]
 
 # Application definition
 
@@ -77,6 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'impact_api.wsgi.application'
 
 SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies"
+
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
