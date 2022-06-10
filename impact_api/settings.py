@@ -75,6 +75,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'impact_api.wsgi.application'
+SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies"
 
 
 # Database
