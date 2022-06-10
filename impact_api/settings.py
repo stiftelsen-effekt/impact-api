@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv('DJANGO_SECRET') != None else 'django-insecure-+sxn!ygb-2c)ck0+fx1pl6agfh0vo=y+!qci$kb0s9^02k3f%*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False if os.getenv('DJANGO_SECRET') != None else True
+DEBUG = True if os.getenv('DJANGO_SECRET') != None else True
 
 ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv('DJANGO_SECRET') != None else ["localhost"]
 CSRF_TRUSTED_ORIGINS = ["https://impact.gieffektivt.no"]
