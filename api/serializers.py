@@ -1,6 +1,9 @@
+import os.path as op
+import urllib.request
+from datetime import date
 from django.utils.translation import get_language
 from rest_framework import serializers
-from currency_converter import CurrencyConverter
+from currency_converter import ECB_URL, CurrencyConverter
 from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention
 
 class CurrencyManager():
@@ -16,9 +19,18 @@ class CurrencyManager():
 
     def get_converted_value(self, context, original_value):
         '''Return cost per output in specified currency, else  in USD'''
+        filename = f"currency_conversions/ecb_{date.today():%Y%m%d}.zip"
+
+        if not op.isfile(filename):
+            # If the next line raises an SSL error, following these steps might help:
+            # https://stackoverflow.com/a/70495761/3210927
+            urllib.request.urlretrieve(ECB_URL, filename)
+
+        c = CurrencyConverter(filename)
+
         currency_code = (context.get('currency')
                          or self.DEFAULT_LANGUAGE_CURRENCY_MAPPING[get_language()]).upper()
-        return CurrencyConverter().convert(original_value / 100, 'USD', currency_code)
+        return c.convert(original_value / 100, 'USD', currency_code)
 
     def get_currency(self, context):
         '''Return specified currency, else USD'''
