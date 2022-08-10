@@ -1,9 +1,9 @@
 import os.path as op
 import urllib.request
-from datetime import date
+from datetime import date, timedelta
 from django.utils.translation import get_language
 from rest_framework import serializers
-from currency_converter import ECB_URL, CurrencyConverter
+from currency_converter import ECB_URL, CurrencyConverter, RateNotFoundError
 from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention
 
 class CurrencyManager():
@@ -17,8 +17,9 @@ class CurrencyManager():
         'en': 'USD'
     }
 
-    def get_converted_value(self, context, original_value):
-        '''Return cost per output in specified currency, else  in USD'''
+    def get_converted_value(self, context, original_value, conversion_date):
+        '''Get latest currency conversions and return cost per output in
+        specified currency, else in USD'''
         filename = f"currency_conversions/ecb_{date.today():%Y%m%d}.zip"
 
         if not op.isfile(filename):
@@ -30,7 +31,20 @@ class CurrencyManager():
 
         currency_code = (context.get('currency')
                          or self.DEFAULT_LANGUAGE_CURRENCY_MAPPING[get_language()]).upper()
-        return c.convert(original_value / 100, 'USD', currency_code)
+        try:
+            # ECB doesn't record conversion rates for weekend or some holiday dates, so if we don't
+            # have a match, try again for the day four days earlier (to dodge around Easter weekend)
+            return c.convert(
+                original_value / 100,
+                'USD',
+                currency_code,
+                conversion_date)
+        except RateNotFoundError:
+            return c.convert(
+                original_value / 100,
+                'USD',
+                currency_code,
+                conversion_date - timedelta(days=4))
 
     def get_currency(self, context):
         '''Return specified currency, else USD'''
@@ -50,8 +64,9 @@ class EvaluationSerializer(serializers.ModelSerializer):
     manager = CurrencyManager()
 
     def get_converted_cost_per_output(self, evaluation):
-        '''Return cost per output in specified currency, else  in USD'''
-        return self.manager.get_converted_value(self.context, evaluation.cents_per_output)
+        '''Return cost per output in specified currency, else in USD'''
+        conversion_date = evaluation.start_date()
+        return self.manager.get_converted_value(self.context, evaluation.cents_per_output, conversion_date)
 
     def get_currency(self, evaluation):
         '''Return specified currency, else USD'''
@@ -75,15 +90,21 @@ class AllotmentSerializer(serializers.ModelSerializer):
     manager = CurrencyManager()
 
     def get_converted_cost_per_output(self, allotment) -> str:
-        return self.manager.get_converted_value(self.context, allotment.cents_per_output())
+        '''Return cost per output in specified currency, else in USD'''
+        return self.manager.get_converted_value(
+            self.context, allotment.cents_per_output(), self._conversion_date(allotment))
 
     def get_converted_sum(self, allotment):
         '''Return sum in specified currency, else in USD'''
-        return self.manager.get_converted_value(self.context, allotment.sum_in_cents)
+        return self.manager.get_converted_value(
+            self.context, allotment.sum_in_cents, self._conversion_date(allotment))
 
     def get_currency(self, allotment):
         '''Return specified currency, else USD'''
         return self.manager.get_currency(self.context)
+
+    def _conversion_date(self, allotment) -> date:
+        return allotment.start_date()
 
     class Meta:
         model = Allotment
