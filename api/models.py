@@ -93,7 +93,6 @@ class Evaluation(models.Model):
     @classmethod
     def is_hidden_from_admin_sidebar(cls):
         return False
-
     def start_date(self) -> date:
         return date(self.start_year, self.start_month, 1)
 
