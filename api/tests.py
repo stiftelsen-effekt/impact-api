@@ -9,6 +9,9 @@ from api.admin import EvaluationAdmin, AllotmentAdmin
 from api import serializers
 from api.models import (
     Allotment, Evaluation, MaxImpactFundGrant, Charity, Intervention)
+from freezegun import freeze_time
+# Freeze time on tests that hit the currency converter so that the tests
+# don't grab external ECB data
 
 def create_charity(charity_name='Skynet', abbreviation='SN'):
     return Charity.objects.create(
@@ -211,8 +214,7 @@ class AllotmentAdminTests(TestCase):
     def test_rounding_cents_per_output(self):
         allotment = create_allotment(sum_in_cents=15, number_outputs_purchased=4)
         allotment_admin = AllotmentAdmin(model=Allotment, admin_site=AdminSite())
-        self.assertEqual(allotment_admin.rounded_cents_per_output(allotment=allotment),
-                         4)
+        self.assertEqual(allotment_admin.rounded_cents_per_output(allotment=allotment), 4)
 
 class EvaluationAdminTests(TestCase):
     def test_custom_admin_display_methods(self):
@@ -240,13 +242,22 @@ class MiddlewareIntegrationTests(TestCase):
         self.assertEqual(content_2['errors'][0], 'Currency ZZZ not supported')
         self.assertEqual(content_2['errors'][1], 'Language code zz not supported')
 
+@freeze_time("2022-08-23")
 class EvaluationViewTests(TestCase):
     def setUp(self):
         if self._testMethodName != 'test_evaluation_not_found':
-            self.eval_1 = create_evaluation()
+            self.charity = create_charity()
+            self.intervention = create_intervention()
+            self.eval_1 = create_evaluation(charity=self.charity, intervention=self.intervention)
 
-    def test_evaluation_not_found(self):
+    def test_evaluation_not_found_by_start_date(self):
         query = reverse('evaluations') + '?start_year=2016'
+        content = json.loads(self.client.get(query).content)
+        self.assertEqual(
+            content['warnings'][0], 'No evaluations found with those parameters')
+
+    def test_evaluation_not_found_by_donation_date(self):
+        query = reverse('evaluations') + '?donation_year=2010'
         content = json.loads(self.client.get(query).content)
         self.assertEqual(
             content['warnings'][0], 'No evaluations found with those parameters')
@@ -262,6 +273,7 @@ class EvaluationViewTests(TestCase):
               'start_year': 2010,
               'cents_per_output': 100,
               'converted_cost_per_output': 1.0,
+              'exchange_rate_date': '2010-12-01',
               'currency': 'USD',
               'language': 'en',
               'charity': {
@@ -272,6 +284,13 @@ class EvaluationViewTests(TestCase):
                   'long_description': (
                       'Reducing the risk from misaligned '
                       'natural intelligence')}}])
+
+    def test_specifying_conversion_date(self):
+        query = '?conversion_year=2011&conversion_month=12&conversion_day=25&currency=gbp'
+        response = self.client.get(reverse('evaluations') + query)
+        evaluation = json.loads(response.content)['evaluations'][0]
+        self.assertEqual(evaluation['exchange_rate_date'], '2011-12-23')
+        self.assertEqual(evaluation['converted_cost_per_output'], 0.6380485563299378)
 
     def test_filtering_by_charity(self):
         '''Ensure that specifying charities in views returns only those charities'''
@@ -352,29 +371,59 @@ class EvaluationViewTests(TestCase):
         self.assertEqual(content['evaluations'][0]['intervention']['long_description'],
                          'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
 
-    def test_specified_currency(self):
+    def test_specified_currency_on_evaluation_date(self):
         '''Ensure queries specifying currency get the correct currency'''
         original_cost_in_cents = Evaluation.objects.all()[0].cents_per_output
         expected_conversion = CurrencyConverter().convert(
-            original_cost_in_cents / 100, 'USD', 'EUR')
+            original_cost_in_cents / 100, 'USD', 'EUR', date(2010, 12, 1))
         query = reverse('evaluations') + '?currency=EUR'
         content = json.loads(self.client.get(query).content)
         evaluation = content['evaluations'][0]
         self.assertEqual(evaluation['currency'], 'EUR')
         self.assertEqual(evaluation['converted_cost_per_output'], expected_conversion)
 
+    def test_fetching_evaluation_by_donation_date(self):
+        eval_2 = create_evaluation(
+            charity=self.charity, intervention=self.intervention, start_year=2011, start_month=1)
+        query_1 = reverse('evaluations') + '?currency=EUR&donation_year=2011&donation_month=2'
+        query_2 = reverse('evaluations') + '?currency=EUR&donation_year=2011&donation_month=1'
+        query_3 = reverse('evaluations') + '?currency=EUR&donation_year=2010&donation_month=12'
+
+        result_1 = json.loads(self.client.get(query_1).content)['evaluations'][0]
+        result_2 = json.loads(self.client.get(query_2).content)['evaluations'][0]
+        result_3 = json.loads(self.client.get(query_3).content)['evaluations'][0]
+
+        self.assertEqual(result_1['id'], eval_2.id)
+        self.assertEqual(result_2['id'], eval_2.id)
+        self.assertEqual(result_3['id'], self.eval_1.id)
+
+        self.assertEqual(result_1['exchange_rate_date'], '2011-02-01')
+        self.assertEqual(result_2['exchange_rate_date'], '2010-12-31')
+        self.assertEqual(result_3['exchange_rate_date'], '2010-12-01')
+
+        self.assertEqual(result_1['converted_cost_per_output'], 0.7270083605961469)
+        self.assertEqual(result_2['converted_cost_per_output'], 0.74839095943721)
+        self.assertEqual(result_3['converted_cost_per_output'], 0.7624857033930613)
+
+@freeze_time("2022-08-23")
 class MaxImpactFundGrantIndexViewTests(TestCase):
     def setUp(self):
         if self._testMethodName != 'test_grant_not_found':
-            grant_1 = create_grant()
+            self.grant_1 = create_grant()
             self.allotment_1 = create_allotment(
-                max_impact_fund_grant=grant_1)
+                max_impact_fund_grant=self.grant_1)
 
-    def test_grant_not_found(self):
+    def test_grant_not_found_by_start_date(self):
         query = reverse('max_impact_fund_grants') + '?start_year=2016'
         content = json.loads(self.client.get(query).content)
         self.assertEqual(
-            content['warnings'][0], 'No grants found with those parameters')
+            content['warnings'][0], 'No max_impact_fund_grants found with those parameters')
+
+    def test_grant_not_found_by_donation_date(self):
+        query = reverse('max_impact_fund_grants') + '?donation_year=2010'
+        content = json.loads(self.client.get(query).content)
+        self.assertEqual(
+            content['warnings'][0], 'No max_impact_fund_grants found with those parameters')
 
     def test_one_grant(self):
         '''Check output from a single grant'''
@@ -392,6 +441,7 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                   'currency': 'USD',
                   'sum_in_cents': 9999,
                   'converted_cost_per_output': 0.045,
+                  'exchange_rate_date': '2015-06-01',
                   'number_outputs_purchased': 2222,
                   'intervention': {
                       'id': 1,
@@ -401,6 +451,14 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
                       'id': 1,
                       'charity_name': 'Skynet',
                       'abbreviation': 'SN'}}]}])
+
+    def test_specifying_conversion_date(self):
+        query = '?conversion_year=2017&conversion_month=5&conversion_day=2&currency=eur'
+        response = self.client.get(reverse('max_impact_fund_grants') + query)
+        allotment = json.loads(response.content)['max_impact_fund_grants'][0]['allotment_set'][0]
+        self.assertEqual(allotment['exchange_rate_date'], '2017-05-02')
+        self.assertEqual(allotment['converted_cost_per_output'], 0.04122766834631242)
+        self.assertEqual(allotment['converted_sum'], 91.60787906550618)
 
     def test_filtering_by_year(self):
         '''Ensure specifying start_year/end_year in views gets only grants from/before
@@ -454,14 +512,39 @@ class MaxImpactFundGrantIndexViewTests(TestCase):
         self.assertEqual(intervention['long_description'],
                          'Rødøcøng thø røsk frøm møsøløgnød nøtørøl øntølløgønce')
 
-    def test_specified_currency(self):
+    def test_specified_currency_on_grant_date(self):
         '''Ensure queries specifying currency get the correct currency'''
         original_sum_in_cents = Allotment.objects.all()[0].sum_in_cents
         expected_conversion = CurrencyConverter().convert(
-            original_sum_in_cents / 100, 'USD', 'EUR')
+            original_sum_in_cents / 100, 'USD', 'EUR', date(2015, 6, 1))
         query = reverse('max_impact_fund_grants') + '?currency=EUR'
         content = json.loads(self.client.get(query).content)
         allotment = content['max_impact_fund_grants'][0]['allotment_set'][0]
         self.assertEqual(allotment['currency'], 'EUR')
         self.assertEqual(allotment['converted_sum'], expected_conversion)
+
+    def test_fetching_grant_by_donation_date(self):
+        grant_2 = create_grant(start_year=2016, start_month=1)
+
+        allotment_2 = create_allotment(
+            max_impact_fund_grant=grant_2, intervention=Intervention.objects.first())
+        query_1 = reverse('max_impact_fund_grants') + '?currency=EUR&donation_year=2016&donation_month=2'
+        query_2 = reverse('max_impact_fund_grants') + '?currency=EUR&donation_year=2016&donation_month=1'
+        query_3 = reverse('max_impact_fund_grants') + '?currency=EUR&donation_year=2015&donation_month=12'
+
+        result_1 = json.loads(self.client.get(query_1).content)['max_impact_fund_grants'][0]
+        result_2 = json.loads(self.client.get(query_2).content)['max_impact_fund_grants'][0]
+        result_3 = json.loads(self.client.get(query_3).content)['max_impact_fund_grants'][0]
+
+        self.assertEqual(result_1['id'], grant_2.id)
+        self.assertEqual(result_2['id'], grant_2.id)
+        self.assertEqual(result_3['id'], self.grant_1.id)
+
+        self.assertEqual(result_1['allotment_set'][0]['exchange_rate_date'], '2016-02-01')
+        self.assertEqual(result_2['allotment_set'][0]['exchange_rate_date'], '2015-12-31')
+        self.assertEqual(result_3['allotment_set'][0]['exchange_rate_date'], '2015-12-01')
+
+        self.assertEqual(result_1['allotment_set'][0]['converted_cost_per_output'], 0.041345093715545754)
+        self.assertEqual(result_2['allotment_set'][0]['converted_cost_per_output'], 0.041333700744006614)
+        self.assertEqual(result_3['allotment_set'][0]['converted_cost_per_output'], 0.04245283018867924)
 

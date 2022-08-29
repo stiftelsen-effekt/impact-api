@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
-from currency_converter import CurrencyConverter
 from datetime import date
 
 def validate_year(value):
@@ -76,6 +75,11 @@ class Allotment(models.Model):
         return True
     def cents_per_output(self) -> str:
         return self.sum_in_cents / self.number_outputs_purchased
+    def start_date(self) -> date:
+        return date(
+            self.max_impact_fund_grant.start_year,
+            self.max_impact_fund_grant.start_month, 1)
+
     max_impact_fund_grant = models.ForeignKey(MaxImpactFundGrant, on_delete=models.CASCADE)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
@@ -89,6 +93,9 @@ class Evaluation(models.Model):
     @classmethod
     def is_hidden_from_admin_sidebar(cls):
         return False
+    def start_date(self) -> date:
+        return date(self.start_year, self.start_month, 1)
+
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
     start_year = models.PositiveIntegerField(validators=[validate_year])
