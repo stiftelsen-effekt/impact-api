@@ -1,10 +1,10 @@
-import os.path as op
-import urllib.request
-from datetime import date, timedelta
 from django.utils.translation import get_language
 from rest_framework import serializers
-from currency_converter import ECB_URL, CurrencyConverter, RateNotFoundError
+from currency_converter import RateNotFoundError
 from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention
+from .__init__ import get_currency_converter
+from datetime import date, timedelta
+
 
 class CurrencyManager():
     '''Deals with currency conversions
@@ -37,37 +37,21 @@ class CurrencyManager():
                 or self.DEFAULT_LANGUAGE_CURRENCY_MAPPING[get_language()]).upper()
 
     def _converted_price_and_date(self, context, model_instance, original_value=1) -> dict:
-        conversion_date = self._targeted_conversion_date(context, model_instance)
-        converter = self._refreshed_currency_converter()
+
+        conversion_date = self._targeted_conversion_date(
+            context, model_instance)
+
         currency_code = (context.get('currency')
                          or self.DEFAULT_LANGUAGE_CURRENCY_MAPPING[get_language()]).upper()
-        converted_value = None
-        day_difference = 0
 
-        while not converted_value:
-            try:
-                # ECB doesn't record conversion rates for weekend or some holiday dates, so if we
-                # don't have a match, try again for the day four days earlier (to dodge around
-                # Easter weekend)
-                converted_value = converter.convert(
-                    original_value / 100,
-                    'USD',
-                    currency_code,
-                    conversion_date - timedelta(day_difference))
-            except RateNotFoundError:
-                day_difference += 1
-        return {'conversion_date': conversion_date - timedelta(day_difference),
+        converted_value = get_currency_converter().convert(
+            original_value / 100,
+            'USD',
+            currency_code,
+            conversion_date)
+
+        return {'conversion_date': conversion_date,
                 'converted_value': converted_value}
-
-    def _refreshed_currency_converter(self) -> CurrencyConverter:
-        filename = f"currency_conversions/ecb_{date.today():%Y%m%d}.zip"
-
-        if not op.isfile(filename):
-            # If the next line raises an SSL error, following these steps might help:
-            # https://stackoverflow.com/a/70495761/3210927
-            urllib.request.urlretrieve(ECB_URL, filename)
-
-        return CurrencyConverter(filename)
 
     def _targeted_conversion_date(self, context, model_instance) -> date:
         if context.get('conversion_year'):
@@ -89,6 +73,7 @@ class InterventionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Intervention
         fields = ['long_description', 'short_description', 'id']
+
 
 class AllotmentSerializer(serializers.ModelSerializer):
     intervention = InterventionSerializer(read_only=True)
@@ -122,6 +107,7 @@ class AllotmentSerializer(serializers.ModelSerializer):
         exclude = ['max_impact_fund_grant']
         depth = 1
 
+
 class EvaluationSerializer(serializers.ModelSerializer):
     intervention = InterventionSerializer(read_only=True)
     converted_cost_per_output = serializers.SerializerMethodField()
@@ -152,6 +138,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
         model = Evaluation
         fields = '__all__'
         depth = 1
+
 
 class MaxImpactFundGrantSerializer(serializers.ModelSerializer):
     allotment_set = AllotmentSerializer(many=True)

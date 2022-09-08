@@ -6,9 +6,13 @@ from django.http import JsonResponse
 from django.db.models import Q
 from .models import Evaluation, MaxImpactFundGrant, Charity
 from .serializers import EvaluationSerializer, MaxImpactFundGrantSerializer
+#from silk.profiling.profiler import silk_profile
+import time
 
 # Before any of the views are called, the code in middleware.py will run
 
+
+# @silk_profile(name='Get evaluations')
 def evaluations(request):
     '''Returns a Json response describing evaluations meeting parameters
     supplied as query strings. If any of the parameters are unspecified, it
@@ -33,7 +37,8 @@ def evaluations(request):
     currency=<ISO 4217 code>
     '''
     query_strings = request.GET
-    charities_query = Q(charity__abbreviation__in=_charity_abbreviations(query_strings))
+    charities_query = Q(
+        charity__abbreviation__in=_charity_abbreviations(query_strings))
     response = _construct_response(
         query_strings=query_strings,
         model=Evaluation,
@@ -43,6 +48,8 @@ def evaluations(request):
         extra_queries=charities_query)
     return JsonResponse(response)
 
+
+# @silk_profile(name='Get max impact grants')
 def max_impact_fund_grants(request):
     '''Returns a Json response describing grants meeting parameters
     supplied as query strings. If any of the parameters are unspecified, it
@@ -73,8 +80,9 @@ def max_impact_fund_grants(request):
         fetch_by_donation_func=_grant_by_donation_date)
     return JsonResponse(response)
 
+
 def _construct_response(query_strings, model: type, model_description: str, serializer: type,
-        fetch_by_donation_func: Callable, extra_queries=Q()) -> dict:
+                        fetch_by_donation_func: Callable, extra_queries=Q()) -> dict:
     lookup_dates = _get_lookup_dates(query_strings)
     if lookup_dates.donation_year:
         records = fetch_by_donation_func(model, lookup_dates, query_strings)
@@ -84,8 +92,10 @@ def _construct_response(query_strings, model: type, model_description: str, seri
     response = {model_description: [
         serializer(record, context=query_strings).data for record in records]}
     if not records:
-        response['warnings'] = [f'No {model_description} found with those parameters']
+        response['warnings'] = [
+            f'No {model_description} found with those parameters']
     return response
+
 
 def _get_lookup_dates(query_strings) -> namedtuple:
     Dates = namedtuple(
@@ -100,6 +110,7 @@ def _get_lookup_dates(query_strings) -> namedtuple:
         query_strings.get('donation_month', 1),
         query_strings.get('donation_day', 1))
 
+
 def _evaluations_by_donation_date(model, dates, query_strings) -> list:
     records = []
 
@@ -109,16 +120,22 @@ def _evaluations_by_donation_date(model, dates, query_strings) -> list:
         records += record
     return records
 
+
 def _grant_by_donation_date(model, dates, _query_strings):
     return _record_by_donation_date(model, dates)
 
+
 def _record_by_donation_date(model, dates, q3=Q()) -> list:
     try:
-        q1 = Q(start_year=dates.donation_year, start_month__lte=dates.donation_month)
+        q1 = Q(start_year=dates.donation_year,
+               start_month__lte=dates.donation_month)
         q2 = Q(start_year__lt=dates.donation_year)
-        return [model.objects.filter((q1 | q2) & q3).order_by('-start_year', '-start_month')[0]]
+        result = [model.objects.filter((q1 | q2) & q3).order_by(
+            '-start_year', '-start_month')[0]]
+        return result
     except IndexError:
         return []
+
 
 def _records(model, dates, extra_queries):
     return model.objects.filter(
@@ -127,6 +144,7 @@ def _records(model, dates, extra_queries):
         start_month__gte=dates.start_month,
         start_year__lte=dates.end_year,
         start_month__lte=dates.end_month)
+
 
 def _charity_abbreviations(query_strings):
     return [abbreviation.upper()

@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
-import pdb
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +21,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv('DJANGO_SECRET') != None else 'django-insecure-+sxn!ygb-2c)ck0+fx1pl6agfh0vo=y+!qci$kb0s9^02k3f%*'
+SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv(
+    'DJANGO_SECRET') != None else 'django-insecure-+sxn!ygb-2c)ck0+fx1pl6agfh0vo=y+!qci$kb0s9^02k3f%*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv('DJANGO_SECRET') != None else True
 
-ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv('DJANGO_SECRET') != None else ["localhost"]
+ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv(
+    'DJANGO_SECRET') != None else ["localhost"]
 CSRF_TRUSTED_ORIGINS = ["https://impact.gieffektivt.no"]
 
 # Application definition
@@ -41,11 +42,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'cachalot',
+    # 'silk',
     "corsheaders",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 'silk.middleware.SilkyMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
@@ -57,6 +61,9 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
     'api.middleware.QueriesMiddleware'
 ]
+
+#SILKY_PYTHON_PROFILER = True
+#SILKY_PYTHON_PROFILER_BINARY = True
 
 ROOT_URLCONF = 'impact_api.urls'
 CORS_ALLOW_ALL_ORIGINS = True
@@ -78,22 +85,26 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'impact_api.wsgi.application'
-SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies"
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if os.getenv("CLOUD_SQL_CONNECTION_NAME"):
+if os.getenv("CLOUD_SQL_CONNECTION_NAME") or True:
     DATABASES = {
         'default': {
-            'ENGINE': 'mysql.connector.django',
-            'NAME': os.getenv("DATABASE_NAME"),
-            'USER': os.getenv("DATABASE_USER"),
-            'PASSWORD': os.getenv("DATABASE_PASSWORD"),
-            'OPTIONS': {
-                'unix_socket' : '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
-            }
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'Impact',
+            'USER': os.getenv("DB_USER"),
+            'PASSWORD': os.getenv("DB_PASS"),
+            'HOST': '127.0.0.1'
         }
     }
 else:
@@ -134,7 +145,10 @@ USE_I18N = True
 
 USE_TZ = True
 
-gettext = lambda s: s
+
+def gettext(s): return s
+
+
 LANGUAGES = (
     ('en', gettext('English')),
     ('no', gettext('Norwegian')),
@@ -151,3 +165,24 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+'''
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    # 'loggers': {
+    #    'django.db.backends': {
+    #        'handlers': ['console'],
+    #        'level': 'DEBUG',
+    #    },
+    # },
+}
+'''

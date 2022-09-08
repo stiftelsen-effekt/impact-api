@@ -2,7 +2,8 @@ from django.utils.deprecation import MiddlewareMixin
 from django.http import JsonResponse
 from django.conf import settings
 from django.utils.translation import activate
-from currency_converter import CurrencyConverter
+from .__init__ import get_currencies
+
 
 class QueriesMiddleware(MiddlewareMixin):
     def process_view(self, request, view_func, view_args, view_kwargs):
@@ -11,7 +12,7 @@ class QueriesMiddleware(MiddlewareMixin):
         language = queries.get('language')
         currency = queries.get('currency')
         errors = []
-        if currency and currency.upper() not in CurrencyConverter().currencies:
+        if currency and currency.upper() not in get_currencies():
             errors.append(f'Currency {currency.upper()} not supported')
         if language and language.lower() not in [language[0] for language in settings.LANGUAGES]:
             errors.append(f'Language code {language.lower()} not supported')
