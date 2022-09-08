@@ -97,14 +97,15 @@ CACHES = {
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if os.getenv("CLOUD_SQL_CONNECTION_NAME") or True:
+if os.getenv("CLOUD_SQL_CONNECTION_NAME"):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': 'Impact',
             'USER': os.getenv("DB_USER"),
             'PASSWORD': os.getenv("DB_PASS"),
-            'HOST': '127.0.0.1'
+            # 'HOST': '127.0.0.1'
+            'HOST': '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
         }
     }
 else:
