@@ -153,6 +153,7 @@ def gettext(s): return s
 LANGUAGES = (
     ('en', gettext('English')),
     ('no', gettext('Norwegian')),
+    ('et', gettext('Estonian')),
 )
 
 # Static files (CSS, JavaScript, Images)
