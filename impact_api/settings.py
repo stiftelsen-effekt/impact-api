@@ -27,8 +27,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.getenv('DJANGO_SECRET') != None else True
 
+
 ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv(
-    'DJANGO_SECRET') != None else ["localhost"]
+    'DJANGO_SECRET') != None else ["localhost", '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ["https://impact.gieffektivt.no"]
 
 # Application definition

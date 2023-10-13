@@ -4,8 +4,8 @@ from typing import Callable
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.db.models import Q
-from .models import Evaluation, MaxImpactFundGrant, Charity
-from .serializers import EvaluationSerializer, MaxImpactFundGrantSerializer
+from .models import Evaluation, MaxImpactFundGrant, Charity, AllGrantsFundGrant
+from .serializers import EvaluationSerializer, MaxImpactFundGrantSerializer, AllGrantsFundGrantSerializer
 #from silk.profiling.profiler import silk_profile
 import time
 
@@ -80,6 +80,18 @@ def max_impact_fund_grants(request):
         fetch_by_donation_func=_grant_by_donation_date)
     return JsonResponse(response)
 
+def all_grants_fund_grants(request):
+    '''Returns a Json response describing grants meeting parameters
+    supplied as query strings. Parameters and behaviour are same as for max_impact_fund_grants
+    '''
+    query_strings = request.GET
+    response = _construct_response(
+        query_strings=query_strings,
+        model=AllGrantsFundGrant,
+        model_description='all_grants_fund_grants',
+        serializer=AllGrantsFundGrantSerializer,
+        fetch_by_donation_func=_grant_by_donation_date)
+    return JsonResponse(response)
 
 def _construct_response(query_strings, model: type, model_description: str, serializer: type,
                         fetch_by_donation_func: Callable, extra_queries=Q()) -> dict:
