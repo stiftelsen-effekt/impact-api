@@ -1,7 +1,7 @@
 from django.utils.translation import get_language
 from rest_framework import serializers
 from currency_converter import RateNotFoundError
-from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention
+from .models import Evaluation, MaxImpactFundGrant, Allotment, Intervention, AllGrantsFundGrant
 from .__init__ import get_currency_converter
 from datetime import date, timedelta
 
@@ -105,7 +105,7 @@ class AllotmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Allotment
-        exclude = ['max_impact_fund_grant']
+        exclude = ['max_impact_fund_grant', 'all_grants_fund_grant']
         depth = 1
 
 
@@ -151,4 +151,16 @@ class MaxImpactFundGrantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MaxImpactFundGrant
+        fields = '__all__'
+
+class AllGrantsFundGrantSerializer(serializers.ModelSerializer):
+    allotment_set = AllotmentSerializer(many=True)
+    language = serializers.SerializerMethodField()
+
+    def get_language(self, grant):
+        '''Return globally set language'''
+        return get_language()
+
+    class Meta:
+        model = AllGrantsFundGrant
         fields = '__all__'
