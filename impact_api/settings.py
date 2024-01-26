@@ -155,6 +155,7 @@ LANGUAGES = (
     ('en', gettext('English')),
     ('no', gettext('Norwegian')),
     ('et', gettext('Estonian')),
+    ('sv', gettext('Swedish')),
 )
 
 # Static files (CSS, JavaScript, Images)

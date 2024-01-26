@@ -15,7 +15,8 @@ class CurrencyManager():
     DEFAULT_LANGUAGE_CURRENCY_MAPPING = {
         'no': 'NOK',
         'en': 'USD',
-        'et': 'EUR'
+        'et': 'EUR',
+        'sv': 'SEK',
     }
 
     def converted_price(self, context, original_value, model_instance) -> float:
