@@ -78,7 +78,7 @@ class Intervention(models.Model):
     def is_hidden_from_admin_sidebar(cls):
         return False
     short_description = models.CharField(max_length=100)
-    long_description = models.CharField(max_length=5000)
+    long_description = models.CharField(max_length=1000)
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['short_description'], name='unique_short_description')]
