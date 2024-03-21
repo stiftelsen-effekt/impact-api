@@ -25,7 +25,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv(
     'DJANGO_SECRET') != None else 'django-insecure-+sxn!ygb-2c)ck0+fx1pl6agfh0vo=y+!qci$kb0s9^02k3f%*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv('DJANGO_SECRET') != None else True
+DEBUG = False if os.getenv('DJANGO_SECRET') != None else True
 
 
 ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv(
@@ -98,15 +98,15 @@ CACHES = {
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if os.getenv("CLOUD_SQL_CONNECTION_NAME"):
+if os.getenv("CLOUD_SQL_CONNECTION_NAME") or True:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': 'Impact',
-            'USER': os.getenv("DB_USER"),
-            'PASSWORD': os.getenv("DB_PASS"),
-            # 'HOST': '127.0.0.1'
-            'HOST': '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
+            'USER': "root",
+            'PASSWORD': "",
+            'HOST': '127.0.0.1'
+            # 'HOST': '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
         }
     }
 else:
