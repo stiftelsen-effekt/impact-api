@@ -25,11 +25,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv(
     'DJANGO_SECRET') != None else 'django-insecure-+sxn!ygb-2c)ck0+fx1pl6agfh0vo=y+!qci$kb0s9^02k3f%*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv('DJANGO_SECRET') != None else True
+DEBUG = False if os.getenv('DJANGO_SECRET') != None else True
 
 
-ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv(
-    'DJANGO_SECRET') != None else ["localhost", '127.0.0.1']
+ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv('DJANGO_SECRET') != None else ["localhost", '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ["https://impact.gieffektivt.no"]
 
 # Application definition
@@ -169,23 +168,35 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-'''
 LOGGING = {
     'version': 1,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'mysite.log',
+            'formatter': 'verbose'
+        },
     },
-    # 'loggers': {
-    #    'django.db.backends': {
-    #        'handlers': ['console'],
-    #        'level': 'DEBUG',
-    #    },
-    # },
+    'loggers': {
+        'django': {
+            'handlers':['file'],
+            'propagate': True,
+            'level':'DEBUG',
+        },
+        'MYAPP': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+        },
+    }
 }
-'''
