@@ -102,9 +102,9 @@ if os.getenv("CLOUD_SQL_CONNECTION_NAME"):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'Impact',
-            'USER': "root",
-            'PASSWORD': "",
+            'NAME': os.getenv("DB_NAME"),
+            'USER': os.getenv("DB_USER"),
+            'PASSWORD': os.getenv("DB_PASS"),
             'HOST': '/cloudsql/' + os.getenv("CLOUD_SQL_CONNECTION_NAME"),
         }
     }
