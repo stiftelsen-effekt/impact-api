@@ -3,45 +3,32 @@ from functools import wraps
 import json
 import hashlib
 from datetime import datetime, timedelta
+from django.http import JsonResponse
 
 def datastore_cache(timeout_days=1):
-    """
-    Cache decorator that uses Google Cloud Datastore.
-    Caches API responses for the specified number of days.
-    
-    Args:
-        timeout_days (int): Number of days to cache the response (default: 1)
-    """
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            # Initialize Datastore
             client = datastore.Client()
             
-            # Create cache key from view name and query parameters
             query_items = sorted(request.GET.items())
             key_parts = [view_func.__name__] + [f"{k}:{v}" for k, v in query_items]
             cache_key = hashlib.md5(":".join(key_parts).encode()).hexdigest()
             
-            # Create key for Datastore
             key = client.key('APICache', cache_key)
             
-            # Try to get from cache
             cache_entity = client.get(key)
             
             if cache_entity:
-                # Check if cache is still valid
                 expires = cache_entity.get('expires')
                 if expires and datetime.now().timestamp() < expires:
-                    return JsonResponse(json.loads(cache_entity['response']))
+                    return JsonResponse(json.loads(cache_entity['response'].decode()))
             
-            # Generate new response if not cached or expired
             response = view_func(request, *args, **kwargs)
             
-            # Prepare and save cache entity
             cache_entity = datastore.Entity(key)
             cache_entity.update({
-                'response': response.content.decode(),
+                'response': response.content,  # Store as bytes directly
                 'expires': (datetime.now() + timedelta(days=timeout_days)).timestamp(),
                 'created_at': datetime.now().timestamp(),
                 'view_name': view_func.__name__
