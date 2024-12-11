@@ -22,13 +22,14 @@ def datastore_cache(timeout_days=1):
             if cache_entity:
                 expires = cache_entity.get('expires')
                 if expires and datetime.now().timestamp() < expires:
-                    return JsonResponse(json.loads(cache_entity['response'].decode()))
+                    return JsonResponse(json.loads(cache_entity['response']))
             
             response = view_func(request, *args, **kwargs)
             
-            cache_entity = datastore.Entity(key)
+            # Create entity and exclude 'response' from indexes
+            cache_entity = datastore.Entity(key, exclude_from_indexes=['response'])
             cache_entity.update({
-                'response': response.content,  # Store as bytes directly
+                'response': response.content.decode(),
                 'expires': (datetime.now() + timedelta(days=timeout_days)).timestamp(),
                 'created_at': datetime.now().timestamp(),
                 'view_name': view_func.__name__
