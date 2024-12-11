@@ -7,7 +7,7 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .views import clear_cache
+from .cache import clear_cache
 
 def validate_year(value):
     '''Validate year between 2000 and now'''
