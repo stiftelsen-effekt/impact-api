@@ -5,6 +5,9 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from .views import clear_cache
 
 def validate_year(value):
     '''Validate year between 2000 and now'''
@@ -189,3 +192,27 @@ class Evaluation(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['charity', 'start_month', 'start_year'], name='unique_date_and_charity')]
+
+'''
+Handling cache invalidation
+'''
+
+# For evaluations
+@receiver([post_save, post_delete], sender=Evaluation)
+def clear_evaluation_cache(sender, **kwargs):
+    clear_cache('evaluations')
+
+# For MaxImpactFundGrant
+@receiver([post_save, post_delete], sender=MaxImpactFundGrant)
+def clear_mif_cache(sender, **kwargs):
+    clear_cache('max_impact_fund_grants')
+
+# For AllGrantsFundGrant
+@receiver([post_save, post_delete], sender=AllGrantsFundGrant)
+def clear_agf_cache(sender, **kwargs):
+    clear_cache('all_grants_fund_grants')
+
+# Since Charity changes could affect evaluation responses
+@receiver([post_save, post_delete], sender=Charity)
+def clear_charity_related_cache(sender, **kwargs):
+    clear_cache('evaluations')  # Clear evaluations since they include charity data
