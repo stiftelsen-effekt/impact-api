@@ -99,7 +99,7 @@ class Allotment(models.Model):
 
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     intervention = models.ForeignKey(Intervention, on_delete=models.PROTECT)
-    sum_in_cents = models.PositiveIntegerField()
+    sum_in_cents = models.PositiveBigIntegerField()
     number_outputs_purchased = models.PositiveIntegerField()
 
     # Lower bound is mandatory but defaults to 0
