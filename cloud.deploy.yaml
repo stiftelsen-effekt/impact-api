@@ -30,17 +30,17 @@ steps:
         "-e",
         "CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME}",
         "-e",
-        "DB_NAME=${_DB_NAME}",
+        "DB_NAME=$_DB_NAME",
         "-e",
-        "DB_USER=${_DB_USER}",
+        "DB_USER=$_DB_USER",
         "-e",
-        "DB_PASS=${_DB_PASS}",
+        "DB_PASS=$_DB_PASSWORD",
         "--",
         "python",
         "manage.py",
         "migrate",
       ]
-    secretEnv: ['DB_NAME', 'DB_USER', 'DB_PASS']
+
   - id: "collect static"
     name: "gcr.io/google-appengine/exec-wrapper"
     args:
@@ -54,11 +54,11 @@ steps:
         "-e",
         "CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME}",
         "-e",
-        "DB_NAME=${_DB_NAME}",
+        "DB_NAME=$_DB_NAME",
         "-e",
-        "DB_USER=${_DB_USER}",
+        "DB_USER=$_DB_USER",
         "-e",
-        "DB_PASS=${_DB_PASS}",
+        "DB_PASS=$_DB_PASSWORD",
         "--",
         "python",
         "manage.py",
@@ -67,21 +67,14 @@ steps:
         "2",
         "--no-input",
       ]
-    secretEnv: ['DB_NAME', 'DB_USER', 'DB_PASS']
 
 substitutions:
   _INSTANCE_NAME: effekt-db
   _REGION: europe-north1
   _SERVICE_NAME: impact-api
   _SECRET_SETTINGS_NAME: django_settings
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/impact_api_db_name/versions/latest
-      env: 'DB_NAME'
-    - versionName: projects/$PROJECT_ID/secrets/impact_api_db_username/versions/latest
-      env: 'DB_USER'
-    - versionName: projects/$PROJECT_ID/secrets/impact_api_db_password/versions/latest
-      env: 'DB_PASS'
+  _DB_NAME: ${sm://projects/$PROJECT_ID/secrets/impact_api_db_name/versions/latest}
+  _DB_USER: ${sm://projects/$PROJECT_ID/secrets/impact_api_db_username/versions/latest}
+  _DB_PASSWORD: ${sm://projects/$PROJECT_ID/secrets/impact_api_db_password/versions/latest}
 
 images: ["gcr.io/$PROJECT_ID/impactapi:latest"]
