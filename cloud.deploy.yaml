@@ -52,7 +52,7 @@ steps:
       ]
 
 substitutions:
-  _INSTANCE_NAME: django-instance
+  _INSTANCE_NAME: effekt-db
   _REGION: europe-north1
   _SERVICE_NAME: impact-api
   _SECRET_SETTINGS_NAME: django_settings
