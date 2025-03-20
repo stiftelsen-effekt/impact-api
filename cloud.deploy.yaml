@@ -23,7 +23,7 @@ steps:
     args:
       [
         '-c',
-        'exec-wrapper -i gcr.io/$PROJECT_ID/impactapi -s ${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e SETTINGS_NAME=${_SECRET_SETTINGS_NAME} -e CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e DB_NAME=$$DB_NAME -e DB_USER=$$DB_USER -e DB_PASS=$$DB_PASS -- python manage.py migrate'
+        '/buildstep/execute.sh -i gcr.io/$PROJECT_ID/impactapi -s ${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e SETTINGS_NAME=${_SECRET_SETTINGS_NAME} -e CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e DB_NAME=$$DB_NAME -e DB_USER=$$DB_USER -e DB_PASS=$$DB_PASS -- python manage.py migrate'
       ]
     secretEnv: ['DB_NAME', 'DB_USER', 'DB_PASS']
   - id: "collect static"
@@ -32,7 +32,7 @@ steps:
     args:
       [
         '-c',
-        'exec-wrapper -i gcr.io/$PROJECT_ID/impactapi -s ${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e SETTINGS_NAME=${_SECRET_SETTINGS_NAME} -e CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e DB_NAME=$$DB_NAME -e DB_USER=$$DB_USER -e DB_PASS=$$DB_PASS -- python manage.py collectstatic --verbosity 2 --no-input'
+        '/buildstep/execute.sh -i gcr.io/$PROJECT_ID/impactapi -s ${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e SETTINGS_NAME=${_SECRET_SETTINGS_NAME} -e CLOUD_SQL_CONNECTION_NAME=${PROJECT_ID}:${_REGION}:${_INSTANCE_NAME} -e DB_NAME=$$DB_NAME -e DB_USER=$$DB_USER -e DB_PASS=$$DB_PASS -- python manage.py collectstatic --verbosity 2 --no-input'
       ]
     secretEnv: ['DB_NAME', 'DB_USER', 'DB_PASS']
 
