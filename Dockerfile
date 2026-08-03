@@ -3,7 +3,8 @@
 FROM python:3.10-slim
 
 RUN apt-get update
-RUN apt-get install -y python3-dev default-libmysqlclient-dev build-essential
+RUN apt-get install -y python3-dev default-libmysqlclient-dev build-essential ca-certificates
+RUN update-ca-certificates
 
 # Allow statements and log messages to immediately appear in the Knative logs
 ENV PYTHONUNBUFFERED True

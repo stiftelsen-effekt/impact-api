@@ -1,4 +1,5 @@
 asgiref==3.5.0
+certifi
 coverage==6.3.2
 CurrencyConverter==0.16.12
 Django==4.0.4
