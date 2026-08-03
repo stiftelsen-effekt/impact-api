@@ -144,7 +144,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'CET'
+# Equivalent to the legacy 'CET' alias (same offsets and DST rules), but a real
+# IANA zone: 'CET' now ships only in Debian's separate tzdata-legacy package.
+TIME_ZONE = 'Europe/Berlin'
 
 USE_I18N = True
 
