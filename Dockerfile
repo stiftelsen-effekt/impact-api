@@ -1,6 +1,6 @@
 # Use the official lightweight Python image.
 # https://hub.docker.com/_/python
-FROM python:3.12.15-slim-trixie
+FROM python:3.13.17-slim-trixie
 
 RUN apt-get update
 # pkg-config is required to build mysqlclient >= 2.2
