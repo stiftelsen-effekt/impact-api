@@ -1,9 +1,10 @@
 # Use the official lightweight Python image.
 # https://hub.docker.com/_/python
-FROM python:3.10-slim
+FROM python:3.12.15-slim-trixie
 
 RUN apt-get update
-RUN apt-get install -y python3-dev default-libmysqlclient-dev build-essential ca-certificates
+# pkg-config is required to build mysqlclient >= 2.2
+RUN apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config ca-certificates
 RUN update-ca-certificates
 
 # Allow statements and log messages to immediately appear in the Knative logs
