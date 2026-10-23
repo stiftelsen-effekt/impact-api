@@ -101,7 +101,6 @@ if os.getenv("CLOUD_SQL_CONNECTION_NAME"):
     print("Using Cloud SQL")
     print("DB_NAME: ", os.getenv("DB_NAME"))
     print("DB_USER: ", os.getenv("DB_USER"))
-    print("DB_PASS: ", os.getenv("DB_PASS"))
     print("CLOUD_SQL_CONNECTION_NAME: ", os.getenv("CLOUD_SQL_CONNECTION_NAME"))
     DATABASES = {
         'default': {
