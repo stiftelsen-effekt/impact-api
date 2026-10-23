@@ -52,3 +52,5 @@ availableSecrets:
       env: 'DB_PASS'
 
 images: ["gcr.io/$PROJECT_ID/impactapi:latest"]
+options:
+  logging: CLOUD_LOGGING_ONLY
