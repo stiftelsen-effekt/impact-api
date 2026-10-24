@@ -27,6 +27,14 @@ SECRET_KEY = os.getenv('DJANGO_SECRET') if os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False if os.getenv('DJANGO_SECRET') != None else True
 
+if not DEBUG:
+    # Cloud Run terminates TLS and sets X-Forwarded-Proto; without this Django treats every
+    # request as plain HTTP and SecurityMiddleware skips the HSTS header.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 31536000
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 
 ALLOWED_HOSTS = ["impact.gieffektivt.no"] if os.getenv('DJANGO_SECRET') != None else ["localhost", '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ["https://impact.gieffektivt.no"]
